@@ -4,12 +4,14 @@ import { getPercentage } from './math';
 
 const percentOfMemoryToUse = 0.0001;
 const memory = totalmem();
+const getPercentageOfMemory = (): number => Math.ceil(getPercentage(percentOfMemoryToUse, memory));
 
 const configuration = {
   timeCost: 20,
+  hashLength: 32,
   type: argon2i,
   parallelism: 1,
-  memoryCost: Math.ceil(getPercentage(percentOfMemoryToUse, memory)),
+  memoryCost: 8264,
 };
 
 export const hashPassword = (password: string): Promise<string> => hash(password, configuration);
@@ -17,7 +19,4 @@ export const hashPassword = (password: string): Promise<string> => hash(password
 export const verifyHashedPassword = (
   hashedPassword: string,
   password: string,
-): Promise<boolean> => {
-  console.log('hashed', hashedPassword, 'length', hashedPassword.length);
-  return verify(hashedPassword, password);
-}
+): Promise<boolean> => verify(hashedPassword, password);
