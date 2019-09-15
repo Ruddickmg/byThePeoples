@@ -5,7 +5,7 @@
       <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>
-      <jdbc-url>jdbc:postgresql://35.188.51.106:5432/btp-data</jdbc-url>
+      <jdbc-url>jdbc:postgresql://35.188.51.106:5432/btp-test</jdbc-url>
     </data-source>
   </component>
 </project>
