@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "ts-node ./src/api.ts",
-    "build": "babel -d ./src -o ./dist"
+    "build": "tsc ./src"
   },
   "dependencies": {
     "argon2": "^0.24.1",
