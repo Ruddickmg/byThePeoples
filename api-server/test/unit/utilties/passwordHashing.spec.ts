@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { hashPassword, verifyHashedPassword } from '../../../utilities/passwordHashing';
+import { hashPassword, verifyHashedPassword } from '../../../src/utilities/passwordHashing';
 
 describe('passwordHashing', (): void => {
   describe('hashPassword', (): void => {

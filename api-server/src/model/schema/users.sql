@@ -9,4 +9,4 @@ create table users.authentication
 			primary key
 );
 
-alter table users.authentication owner to "GrantRuddick";
+alter table users.passwordAuthentication owner to "GrantRuddick";

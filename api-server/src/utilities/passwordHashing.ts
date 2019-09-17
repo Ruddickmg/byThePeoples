@@ -7,9 +7,9 @@ const memory = totalmem();
 const getPercentageOfMemory = (): number => Math.ceil(getPercentage(percentOfMemoryToUse, memory));
 
 const configuration = {
-  timeCost: 20,
-  hashLength: 32,
   type: argon2i,
+  timeCost: 15,
+  hashLength: 32,
   parallelism: 1,
   memoryCost: 8264,
 };

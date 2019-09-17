@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { getPercentage } from '../../../utilities/math';
+import { getPercentage } from '../../../src/utilities/math';
 
 describe('math', (): void => {
   describe('getPercentage', (): void => {
