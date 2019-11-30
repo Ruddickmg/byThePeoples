@@ -1,11 +1,12 @@
-const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
+import merge from 'webpack-merge';
+import OptimizeCSSAssetsPlugin from 'optimize-css-assets-webpack-plugin';
+import { Configuration } from 'webpack';
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const merge = require('webpack-merge');
 const baseConfig = require('./webpack.common');
 const path = require('path');
 const publicPath = '../../dist/public';
 
-module.exports = merge(baseConfig, {
+export const productionServerConfig: Configuration = merge(baseConfig, {
   mode: 'production',
   output: {
     path: path.resolve(__dirname, `${publicPath}/scripts`),
@@ -25,7 +26,7 @@ module.exports = merge(baseConfig, {
   },
   module: {
     rules:  [
-       {
+      {
         test: /\.vue$/,
         loader: 'vue-loader',
         options: {
@@ -40,7 +41,6 @@ module.exports = merge(baseConfig, {
     },
   },
   plugins: [
-    new MiniCssExtractPlugin({ filename: 'common.[chunkhash].css' }),
     new OptimizeCSSAssetsPlugin({
       cssProcessorPluginOptions: {
         preset: [
@@ -49,5 +49,10 @@ module.exports = merge(baseConfig, {
         ],
       }
     }),
+    new MiniCssExtractPlugin({
+      filename: 'common.[chunkhash].css',
+    }),
   ],
 });
+
+export default productionServerConfig;

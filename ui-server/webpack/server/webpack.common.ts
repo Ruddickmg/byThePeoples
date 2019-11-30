@@ -1,9 +1,11 @@
+import { Configuration } from 'webpack';
+
 const nodeExternals = require('webpack-node-externals');
 const VueSSRServerPlugin = require('vue-server-renderer/server-plugin');
 const merge = require('webpack-merge');
 const baseConfig = require('../webpack.config');
 
-module.exports = merge(baseConfig, {
+export const commonServerConfig: Configuration = merge(baseConfig, {
   entry: ['./src/vue/server-entry.ts'],
   output: {
     libraryTarget: 'commonjs2',
@@ -19,3 +21,5 @@ module.exports = merge(baseConfig, {
     new VueSSRServerPlugin(),
   ],
 });
+
+export default commonServerConfig;

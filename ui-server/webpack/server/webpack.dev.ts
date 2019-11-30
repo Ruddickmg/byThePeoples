@@ -1,9 +1,11 @@
+import { Configuration } from 'webpack';
 const merge = require('webpack-merge');
+const HotModuleReplacement = require('webpack-hot-middleware');
 const baseConfig = require('./webpack.common');
 const path = require('path');
 const publicPath = '../../src/public';
 
-module.exports = merge(baseConfig, {
+export const developmentServerConfig: Configuration = merge(baseConfig, {
   mode: 'development',
   devtool: 'source-map',
   output: {
@@ -21,9 +23,14 @@ module.exports = merge(baseConfig, {
       }
     ]
   },
+  plugins: [
+    new HotModuleReplacement(),
+  ],
   resolve: {
     alias: {
       'vue$': 'vue/dist/vue.runtime.js',
     },
   },
 });
+
+export default developmentServerConfig;

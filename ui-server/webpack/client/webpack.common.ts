@@ -1,8 +1,9 @@
+import { Configuration } from 'webpack';
 const VueSSRClientPlugin = require('vue-server-renderer/client-plugin');
 const merge = require('webpack-merge');
 const baseConfig = require('../webpack.config');
 
-module.exports = merge(baseConfig, {
+export const commonClientConfig: Configuration = merge(baseConfig, {
   entry:  ['./src/vue/client-entry.ts'],
   optimization: {
     splitChunks: {
@@ -14,3 +15,5 @@ module.exports = merge(baseConfig, {
     new VueSSRClientPlugin()
   ],
 });
+
+export default commonClientConfig;

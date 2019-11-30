@@ -1,9 +1,10 @@
+import { Configuration } from 'webpack';
 const merge = require('webpack-merge');
 const baseConfig = require('./webpack.common');
 const path = require('path');
 const publicPath = '../../src/public';
 
-module.exports = merge(baseConfig, {
+export const developmentClientConfig: Configuration = merge(baseConfig, {
   mode: 'development',
   devtool: 'source-map',
   output: {
@@ -27,19 +28,11 @@ module.exports = merge(baseConfig, {
       normal: true
     }
   },
-  module: {
-    rules: [
-      {
-        test: /\.(css|scss|sass)$/,
-        options: {
-          sourceMap: true,
-        }
-      }
-    ]
-  },
   resolve: {
     alias: {
       'vue$': 'vue/dist/vue.runtime.js',
     },
   },
 });
+
+export default developmentClientConfig;

@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <h1>My Vue App</h1>
+    <h1>My Vue App!</h1>
   </div>
 </template>
 

@@ -1,12 +1,11 @@
-const merge = require('webpack-merge');
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const merge = require('webpack-merge');
 const baseConfig = require('./webpack.common');
 const path = require('path');
 const publicPath = '../../dist/public';
 
-module.exports = merge(baseConfig, {
+export const productionClientConfig = merge(baseConfig, {
   mode: 'production',
   output: {
     path: path.resolve(__dirname, `${publicPath}/scripts`),
@@ -26,7 +25,7 @@ module.exports = merge(baseConfig, {
   },
   module: {
     rules:  [
-      {
+       {
         test: /\.vue$/,
         loader: 'vue-loader',
         options: {
@@ -41,6 +40,7 @@ module.exports = merge(baseConfig, {
     },
   },
   plugins: [
+    new MiniCssExtractPlugin({ filename: 'common.[chunkhash].css' }),
     new OptimizeCSSAssetsPlugin({
       cssProcessorPluginOptions: {
         preset: [
@@ -49,8 +49,7 @@ module.exports = merge(baseConfig, {
         ],
       }
     }),
-    new MiniCssExtractPlugin({
-      filename: 'common.[chunkhash].css',
-    }),
   ],
 });
+
+export default productionClientConfig;
