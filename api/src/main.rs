@@ -1,14 +1,12 @@
 use actix_web::{web, App, HttpServer};
-use api_server::graph_ql::graph_schema;
-use api_server::{connection, environment, graph_ql, routes, AppData};
+use btp_api_server::{connection, environment, graph_ql, routes, AppData};
 use std::sync::Mutex;
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     let uri = connection::uri();
-
     let data = web::Data::new(AppData {
-        schema: graph_schema(),
+        schema: graph_ql::graph_schema(),
         app_name: String::from("ByThePeoples"),
         counter: Mutex::new(0),
     });
@@ -16,13 +14,12 @@ async fn main() -> std::io::Result<()> {
     let mut server = HttpServer::new(move || {
         App::new()
             .app_data(data.clone())
-            .configure(graph_ql::configuration)
             .configure(routes::configuration)
     });
 
     if environment::in_production() {
         println!("in production");
-        server = server.bind(uri)?;
+        server = server.bind(&uri)?;
     } else {
         use listenfd::ListenFd;
         let mut listen = ListenFd::from_env();
@@ -33,10 +30,9 @@ async fn main() -> std::io::Result<()> {
             println!("Hot reloading enabled.");
             server.listen(listener)?
         } else {
-            println!("Listening at {}", &uri);
-            server.bind(uri)?
+            server.bind(&uri)?
         };
     };
-
+    println!("Listening at {}", &uri);
     server.run().await
 }

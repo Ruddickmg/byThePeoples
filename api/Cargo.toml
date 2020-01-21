@@ -1,5 +1,5 @@
 [package]
-name = "api-server"
+name = "btp-api-server"
 version = "0.1.0"
 authors = ["Marcus Ruddick <ruddickmg@gmail.com>"]
 edition = "2018"

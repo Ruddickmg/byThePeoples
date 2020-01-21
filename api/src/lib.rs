@@ -39,7 +39,7 @@ pub mod connection {
 
     const PORT: &str = "PORT";
     const ADDRESS: &str = "IP";
-    const DEFAULT_PORT: u32 = 80;
+    const DEFAULT_PORT: u32 = 3000;
     const ALL_ADDRESSES: &str = "0.0.0.0";
 
     pub fn uri() -> String {

@@ -14,5 +14,6 @@ async fn hello_world(data: web::Data<super::AppData>) -> impl Responder {
 
 pub fn configuration(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/").route(web::get().to(hello_world)))
+        .service(web::scope("").configure(graph_ql::configuration))
         .service(web::scope("/model").configure(user::config));
 }
