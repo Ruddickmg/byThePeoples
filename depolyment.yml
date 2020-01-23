@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: btp-api-server
+  name: ruddickmg/bythepeoples:api-server
   labels:
-    app: btp-api-server
+    app: api-server
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: btp-api-server
+      app: api-server
   template:
     metadata:
       labels:
-        app: btp-api-server
+        app: api-server
     spec:
       containers:
-        - name: btp-api-server
-          image: api
+        - name: api-server
+          image: ruddickmg/bythepeoples:api-server
           ports:
-            - containerPort: 80
+            - containerPort: 3000
