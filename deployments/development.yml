@@ -1,0 +1,135 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: development
+  name: api-server
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: api-server
+      teir: backend
+  template:
+    metadata:
+      labels:
+        app: api-server
+        teir: backend
+    spec:
+      containers:
+        - name: api-server
+          image: ruddickmg/bythepeoples:api-server
+          ports:
+            - containerPort: 3000
+      imagePullSecrets:
+        - name: docker-credentials
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: development
+  name: api-server
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 8090
+  selector:
+    app: api-server
+    role: master
+    tier: backend
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: development
+  name: redis
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 6379
+  selector:
+    app: redis
+    role: master
+    tier: backend
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: development
+  name: redis
+spec:
+  selector:
+    matchLabels:
+      app: redis
+      role: master
+      tier: backend
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: redis
+        role: master
+        tier: backend
+    spec:
+      containers:
+        - name: master
+          image: redis:alpine
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          ports:
+            - containerPort: 6379
+              protocol: TCP
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: development
+  name: db
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+      role: master
+      tier: backend
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgres
+        role: master
+        tier: backend
+    spec:
+      containers:
+        - name: master
+          image: db:alpine
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          ports:
+            - containerPort: 5432
+              protocol: TCP
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: development
+  name: db
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 5432
+  selector:
+    app: postgres
+    role: master
+    tier: backend

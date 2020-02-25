@@ -6,7 +6,7 @@
     <option name="nocapture" value="false" />
     <option name="emulateTerminal" value="false" />
     <option name="backtrace" value="SHORT" />
-    <option name="workingDirectory" value="file://$PROJECT_DIR$/api" />
+    <option name="workingDirectory" value="file://$PROJECT_DIR$/services/api" />
     <envs>
       <env name="ENVIRONMENT" value="development" />
       <env name="PORT" value="8080" />

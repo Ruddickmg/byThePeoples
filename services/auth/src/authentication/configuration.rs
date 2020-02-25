@@ -20,7 +20,7 @@ pub mod jwt {
     const DEFAULT_USIZE_EXPIRATION: usize = 500000;
 
     pub fn expiration() -> usize {
-        match crate::env_or_default(JWT_EXPIRATION, DEFAULT_EXPIRATION).parse::<usize>() {
+        match environment::env_or_default(JWT_EXPIRATION, DEFAULT_EXPIRATION).parse::<usize>() {
             Ok(size) => size,
             Err(_) => DEFAULT_USIZE_EXPIRATION,
         }

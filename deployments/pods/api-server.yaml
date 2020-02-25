@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: api-server
+spec:
+  containers:
+    - name: btp-api-server
+      image: ruddickmg/bythepeoples:api-server
+      imagePullPolicy: Always
+  imagePullSecrets:
+    - name: docker-credentials

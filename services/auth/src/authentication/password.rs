@@ -1,24 +1,42 @@
 extern crate argonautica;
 
 use super::configuration::hash;
-use argonautica::{Error, Hasher, Verifier};
+use argonautica::{Hasher, Verifier};
 
-pub fn hash_password(password: &str) -> Result<String, Error> {
+pub fn handle_argonautica_error<T>(
+    result: Result<T, argonautica::Error>,
+    message: &str,
+) -> Result<T, String> {
+    match result {
+        Ok(value) => Ok(value),
+        _ => Err(format!("{}", message)),
+    }
+}
+
+pub fn hash_password(password: &str) -> Result<String, String> {
     let mut hasher = Hasher::default();
-    hasher
-        .with_password(password)
-        .with_secret_key(hash::secret())
-        .hash()
+    handle_argonautica_error(
+        hasher
+            .with_password(password)
+            .with_secret_key(hash::secret())
+            .hash(),
+        "An error occurred while hashing password",
+    )
 }
 
-pub fn authenticate(password: &str, hash: &str) -> Result<bool, Error> {
+pub fn authenticate(password: &str, hash: &str) -> Result<bool, String> {
     let mut verifier = Verifier::default();
-    verifier
-        .with_hash(hash)
-        .with_password(password)
-        .with_secret_key(hash::secret())
-        .verify()
+    handle_argonautica_error(
+        verifier
+            .with_hash(hash)
+            .with_password(password)
+            .with_secret_key(hash::secret())
+            .verify(),
+        "An error occurred while authenticating the a password",
+    )
 }
+
+// ---
 
 #[cfg(test)]
 mod hashing_and_auth_tests {
@@ -33,9 +51,7 @@ mod hashing_and_auth_tests {
         };
         match authenticate(&password, &hashed_password) {
             Ok(valid) => {
-                if valid {
-                    println!("Password correctly hashed and validated")
-                } else {
+                if !valid {
                     panic!("Password was not validated correctly, identical passwords responded as mismatched");
                 }
             }
@@ -49,14 +65,15 @@ mod hashing_and_auth_tests {
         let invalid_password = String::from("Not cool...");
         let hashed_password = match hash_password(&password) {
             Ok(hashed) => hashed,
-            Err(error) => panic!("Error saving password"),
+            Err(_) => panic!("Error saving password"),
         };
         match authenticate(&invalid_password, &hashed_password) {
             Ok(valid) => {
                 if valid {
-                    panic!("No error returned for invalid password: {}", valid);
-                } else {
-                    println!("correctly invalidates mis-matched passwords");
+                    panic!(
+                        "Password was incorrectly validated for invalid password: {}",
+                        valid
+                    );
                 }
             }
             Err(error) => panic!("Error authenticating password: {}", error),

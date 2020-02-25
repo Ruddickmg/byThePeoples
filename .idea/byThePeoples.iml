@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="CPP_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/services/auth/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/services/auth/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/services/auth/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/services/auth/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/api/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/api/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/api/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/api/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/postgres_seeder/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/postgres_seeder/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/postgres_seeder/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/postgres_seeder/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/utilities/environment/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/utilities/environment/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/utilities/environment/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/utilities/environment/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/services/api/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/services/api/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/services/api/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/services/api/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/utilities/db/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/utilities/db/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/utilities/db/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/utilities/db/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/utilities/files/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/utilities/files/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/utilities/files/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/utilities/files/benches" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/api/target" />
+      <excludeFolder url="file://$MODULE_DIR$/postgres_seeder/target" />
+      <excludeFolder url="file://$MODULE_DIR$/services/api/target" />
+      <excludeFolder url="file://$MODULE_DIR$/services/auth/target" />
+      <excludeFolder url="file://$MODULE_DIR$/utilities/db/target" />
+      <excludeFolder url="file://$MODULE_DIR$/utilities/environment/target" />
+      <excludeFolder url="file://$MODULE_DIR$/utilities/files/target" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>
