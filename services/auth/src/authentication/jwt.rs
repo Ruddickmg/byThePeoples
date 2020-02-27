@@ -1,5 +1,5 @@
 use super::configuration::jwt;
-use crate::model::user::Credentials;
+use crate::model::credentials::Credentials;
 use jsonwebtoken;
 use serde::{Deserialize, Serialize};
 

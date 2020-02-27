@@ -1,9 +1,7 @@
 use crate::authentication::{jwt, password};
-use crate::logging;
-use crate::model;
-use crate::model::user;
+use crate::model::credentials;
+use crate::{logging, model};
 use actix_web::{http, web, HttpResponse};
-use database::DB;
 
 fn server_error(error: String) -> HttpResponse {
     logging::log_error(error);
@@ -20,9 +18,9 @@ pub async fn authenticate_credentials(
     state: web::Data<model::ServiceState>,
     credentials: web::Json<model::AuthRequest>,
 ) -> HttpResponse {
-    let auth_credentials = model::Credentials::new(&state.db);
+    let mut auth_credentials = credentials::Model::new(&mut state.db);
     let user_name = &credentials.name;
-    if let Ok(auth_record) = auth_credentials.by_name(&user_name) {
+    if let Ok(auth_record) = auth_credentials.by_name(&user_name).await {
         match password::authenticate(&credentials.password, &auth_record.hash) {
             Ok(correct_password) => {
                 if correct_password {
@@ -33,7 +31,7 @@ pub async fn authenticate_credentials(
                         Err(error) => server_error(error),
                     }
                 } else {
-                    invalid_credentials(&username)
+                    invalid_credentials(&user_name)
                 }
             }
             Err(error) => server_error(error),

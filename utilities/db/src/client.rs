@@ -2,6 +2,8 @@ use crate::{connection, transaction};
 use std::{fs, marker};
 use tokio_postgres;
 
+type Params<'a> = &'a [&'a (dyn tokio_postgres::types::ToSql + marker::Sync)];
+
 pub struct Client<'a> {
     connection: connection::Client<'a>,
 }
@@ -13,7 +15,7 @@ impl<'a> Client<'a> {
     pub async fn execute(
         &mut self,
         query: &str,
-        params: &[&(dyn tokio_postgres::types::ToSql + marker::Sync)],
+        params: Params<'a>,
     ) -> Result<u64, tokio_postgres::Error> {
         self.connection.execute(query, params).await
     }
@@ -22,6 +24,13 @@ impl<'a> Client<'a> {
         query: &str,
     ) -> Result<tokio_postgres::Statement, tokio_postgres::Error> {
         self.connection.prepare(query).await
+    }
+    pub async fn query(
+        &mut self,
+        stmt: &tokio_postgres::Statement,
+        params: Params<'a>,
+    ) -> Result<Vec<tokio_postgres::Row>, tokio_postgres::Error> {
+        self.connection.query(stmt, params).await
     }
     pub async fn batch(&mut self, sql: &str) -> Result<(), tokio_postgres::Error> {
         self.connection.batch_execute(sql).await

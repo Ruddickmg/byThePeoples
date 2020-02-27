@@ -1,7 +1,7 @@
 use database::configuration;
 use serde::{Deserialize, Serialize};
 use std::env;
-pub mod user;
+pub mod credentials;
 
 pub type Database = database::DB;
 
