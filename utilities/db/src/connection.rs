@@ -1,10 +1,9 @@
-use crate::configuration;
+use crate::{configuration, Error};
 use bb8;
 use bb8_postgres;
 use tokio_postgres;
 
 pub type Manager = bb8_postgres::PostgresConnectionManager<tokio_postgres::tls::NoTls>;
-pub type Error = bb8::RunError<tokio_postgres::Error>;
 pub type Pool = bb8::Pool<Manager>;
 pub type Client<'a> = bb8::PooledConnection<'a, Manager>;
 
@@ -26,6 +25,6 @@ impl<'a> Connection {
     }
     pub async fn get(&'a mut self) -> Result<Client<'a>, Error> {
         self.pool = self.pool.clone();
-        self.pool.get().await
+        Ok(self.pool.get().await?)
     }
 }
