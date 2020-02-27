@@ -15,10 +15,10 @@ fn invalid_credentials(name: &str) -> HttpResponse {
 }
 
 pub async fn authenticate_credentials(
-    state: web::Data<model::ServiceState>,
+    mut state: web::Data<model::ServiceState>,
     credentials: web::Json<model::AuthRequest>,
 ) -> HttpResponse {
-    let mut auth_credentials = credentials::Model::new(&mut state.db);
+    let mut auth_credentials = credentials::Model::new(&mut state.unwrap().db);
     let user_name = &credentials.name;
     if let Ok(auth_record) = auth_credentials.by_name(&user_name).await {
         match password::authenticate(&credentials.password, &auth_record.hash) {

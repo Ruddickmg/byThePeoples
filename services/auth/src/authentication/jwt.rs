@@ -16,7 +16,8 @@ pub fn generate_token(credentials: Credentials) -> Result<String, String> {
     let Credentials { id, name, .. } = credentials;
     let error_message = format!(
         "An error occurred while generating the jason web token for user: {}, id: {}",
-        &name, &id
+        &name,
+        &id.unwrap()
     );
     if let Some(valid_id) = id {
         match jsonwebtoken::encode(
