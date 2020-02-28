@@ -3,11 +3,11 @@ use std::fs;
 use tokio_postgres;
 
 pub struct Client<'a> {
-    connection: connection::Client<'a>,
+    connection: connection::Connection<'a>,
 }
 
 impl<'a> Client<'a> {
-    pub fn new(client: connection::Client<'a>) -> Client<'a> {
+    pub fn new(client: connection::Connection<'a>) -> Client<'a> {
         Client { connection: client }
     }
     pub async fn execute(&mut self, query: &str, params: Params<'a>) -> Result<u64, Error> {

@@ -1,7 +1,3 @@
-pub struct Model<'a> {
-    db: &'a database::DB,
-}
-
 pub struct Credentials {
     pub id: Option<u32>,
     pub email: Option<String>,
@@ -26,18 +22,17 @@ impl Credentials {
 const GET_CREDENTIALS_BY_NAME: &str =
     "SELECT id, email, name, hash FROM auth.credentials WHERE name = $1";
 
+pub struct Model<'a> {
+    client: database::Client<'a>,
+}
+
 impl<'a> Model<'a> {
-    pub fn new(db: &'a mut database::DB) -> Model<'a> {
-        Model { db }
+    pub fn new(client: database::Client<'a>) -> Model<'a> {
+        Model { client }
     }
-    pub async fn by_name(&mut self, name: &str) -> Result<Credentials, database::DBError> {
-        let mut client = self.db.client().await?;
-        let statement = client.prepare(GET_CREDENTIALS_BY_NAME).await?;
-        if let Ok(rows) = client.query(&statement, &[&name]).await {
-            if let Some(credentials) = Credentials::from_results(rows) {
-                return Ok(credentials);
-            }
-        }
-        panic!("Nooooo!");
+    pub async fn by_name(&mut self, name: &str) -> Result<Option<Credentials>, database::Error> {
+        let statement = self.client.prepare(GET_CREDENTIALS_BY_NAME).await?;
+        let rows = self.client.query(&statement, &[&name][..]).await?;
+        Ok(Credentials::from_results(rows))
     }
 }

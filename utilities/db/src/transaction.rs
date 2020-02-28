@@ -8,7 +8,7 @@ pub struct Transaction<'a> {
 
 impl<'a> Transaction<'a> {
     pub async fn new(
-        connection: &'a mut connection::Client<'a>,
+        connection: &'a mut connection::Connection<'a>,
     ) -> Result<Transaction<'a>, tokio_postgres::Error> {
         Ok(Transaction {
             transaction: connection.transaction().await?,
