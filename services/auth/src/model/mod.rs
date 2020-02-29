@@ -15,12 +15,19 @@ pub struct ServiceState {
     pub db: sync::Mutex<Database>,
 }
 
+impl ServiceState {
+    pub fn new(db: Database) -> ServiceState {
+        ServiceState {
+            db: sync::Mutex::new(db),
+        }
+    }
+}
+
 pub async fn initialize() -> Result<Database, database::Error> {
     let path_to_migrations = format!(
         "{}/src/sql/migrations",
         env::current_dir().unwrap().to_str().unwrap()
     );
-    println!("path to migrations: {}", path_to_migrations);
     let db_config = database::Configuration {
         database: String::from("postgres"),
         password: String::from("password"),
@@ -30,8 +37,7 @@ pub async fn initialize() -> Result<Database, database::Error> {
     };
     let mut db = database::DB::new(db_config).await?;
     if environment::in_development() {
-        db.migrate("/home/moon/web/byThePeoples/services/auth/src/sql/migrations")
-            .await?;
+        db.migrate(&path_to_migrations).await?;
         print!("Migration Successful.\n");
     }
     Ok(db)

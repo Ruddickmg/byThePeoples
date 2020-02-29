@@ -23,25 +23,19 @@ fn get_path_to_file(entry: &fs::DirEntry) -> String {
 
 pub fn by_extension(path: &str, extension: &str) -> Vec<String> {
     let mut files_by_extension: Vec<String> = vec![];
-    println!("in by extension, path: {}, ext: {}", path, extension);
     match fs::read_dir(path) {
         Ok(files) => {
-            println!("files {:#?}", files);
             files_by_extension = files.fold(files_by_extension, |mut results, result| {
                 if let Ok(entry) = result {
                     let file_type = entry.file_type().unwrap();
                     let file_name = get_file_name(&entry);
                     let file_path = get_path_to_file(&entry);
-                    println!("found path: {}", file_path);
                     if file_type.is_dir() {
-                        println!("is dir: {}", file_name);
                         let files_with_extension: Vec<String> = by_extension(&file_path, extension);
                         results.extend_from_slice(&files_with_extension);
                     } else if has_extension(&file_name, extension) {
-                        println!("has extension: {}", file_name);
                         results.push(file_path);
                     }
-                    println!("name: {}", file_name);
                 }
                 results
             })

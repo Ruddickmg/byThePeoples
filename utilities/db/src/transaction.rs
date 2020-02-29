@@ -1,5 +1,5 @@
-use crate::connection;
-use std::{fs, marker};
+use crate::{connection, Error, Params, Results, Statement};
+use std::fs;
 use tokio_postgres;
 
 pub struct Transaction<'a> {
@@ -9,35 +9,32 @@ pub struct Transaction<'a> {
 impl<'a> Transaction<'a> {
     pub async fn new(
         connection: &'a mut connection::Connection<'a>,
-    ) -> Result<Transaction<'a>, tokio_postgres::Error> {
+    ) -> Result<Transaction<'a>, Error> {
         Ok(Transaction {
             transaction: connection.transaction().await?,
         })
     }
-    pub async fn commit(self) -> Result<(), tokio_postgres::Error> {
-        self.transaction.commit().await
+    pub async fn commit(self) -> Result<(), Error> {
+        Ok(self.transaction.commit().await?)
     }
-    pub async fn execute(
+    pub async fn execute<'b>(&mut self, query: &str, params: Params<'b>) -> Result<u64, Error> {
+        Ok(self.transaction.execute(query, params).await?)
+    }
+    pub async fn prepare(&mut self, query: &str) -> Result<Statement, Error> {
+        Ok(self.transaction.prepare(query).await?)
+    }
+    pub async fn query<'b>(
         &mut self,
-        query: &str,
-        params: &[&(dyn tokio_postgres::types::ToSql + marker::Sync)],
-    ) -> Result<u64, tokio_postgres::Error> {
-        self.transaction.execute(query, params).await
+        stmt: &Statement,
+        params: Params<'b>,
+    ) -> Result<Results, Error> {
+        Ok(self.transaction.query(stmt, params).await?)
     }
-    pub async fn prepare(
-        &mut self,
-        query: &str,
-    ) -> Result<tokio_postgres::Statement, tokio_postgres::Error> {
-        self.transaction.prepare(query).await
+    pub async fn batch(&mut self, sql: &str) -> Result<(), Error> {
+        Ok(self.transaction.batch_execute(sql).await?)
     }
-    pub async fn batch(&mut self, sql: &str) -> Result<(), tokio_postgres::Error> {
-        self.transaction.batch_execute(sql).await
-    }
-    pub async fn execute_file(&mut self, path: &str) -> Result<(), tokio_postgres::Error> {
-        if let Ok(sql) = fs::read_to_string(path) {
-            self.batch(&sql).await
-        } else {
-            panic!(format!("Could not get file contents from {}", path));
-        }
+    pub async fn execute_file(&mut self, path: &str) -> Result<(), Error> {
+        let sql = fs::read_to_string(path)?;
+        Ok(self.batch(&sql).await?)
     }
 }

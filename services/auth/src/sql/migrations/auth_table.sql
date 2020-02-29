@@ -8,3 +8,5 @@ CREATE TABLE IF NOT EXISTS auth.credentials (
     updated_at timestamp DEFAULT current_timestamp not null,
     created_at timestamp DEFAULT current_timestamp not null
 );
+
+

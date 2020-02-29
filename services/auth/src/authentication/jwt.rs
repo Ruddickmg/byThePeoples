@@ -1,6 +1,7 @@
 use super::configuration::jwt;
 use crate::model::credentials::Credentials;
 use jsonwebtoken;
+use jsonwebtoken::EncodingKey;
 use serde::{Deserialize, Serialize};
 
 pub const TOKEN_KEY: &str = "Authorization: Bearer";
@@ -12,27 +13,19 @@ struct Claims {
     exp: usize,
 }
 
-pub fn generate_token(credentials: Credentials) -> Result<String, String> {
+// TODO add better error handling here
+pub fn generate_token(credentials: Credentials) -> Option<String> {
     let Credentials { id, name, .. } = credentials;
-    let error_message = format!(
-        "An error occurred while generating the jason web token for user: {}, id: {}",
-        &name,
-        &id.unwrap()
-    );
-    if let Some(valid_id) = id {
-        match jsonwebtoken::encode(
-            &jsonwebtoken::Header::default(),
-            &Claims {
-                id: valid_id,
-                name,
-                exp: jwt::expiration(),
-            },
-            jwt::secret().as_ref(),
-        ) {
-            Ok(jwt) => Ok(jwt),
-            _ => Err(error_message),
-        }
-    } else {
-        Err(error_message)
+    match jsonwebtoken::encode(
+        &jsonwebtoken::Header::default(),
+        &Claims {
+            id,
+            name,
+            exp: jwt::expiration(),
+        },
+        &EncodingKey::from_secret(&jwt::secret().as_ref()),
+    ) {
+        Ok(jwt) => Some(jwt),
+        Err(_) => None,
     }
 }

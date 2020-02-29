@@ -1,26 +1,25 @@
-use crate::{connection, transaction, Error, Params};
+use crate::{connection::Connection, transaction, Error, Params, Results, Statement};
 use std::fs;
-use tokio_postgres;
 
 pub struct Client<'a> {
-    connection: connection::Connection<'a>,
+    connection: Connection<'a>,
 }
 
 impl<'a> Client<'a> {
-    pub fn new(client: connection::Connection<'a>) -> Client<'a> {
-        Client { connection: client }
+    pub fn new(connection: Connection<'a>) -> Client<'a> {
+        Client { connection }
     }
-    pub async fn execute(&mut self, query: &str, params: Params<'a>) -> Result<u64, Error> {
+    pub async fn execute<'b>(&mut self, query: &str, params: Params<'b>) -> Result<u64, Error> {
         Ok(self.connection.execute(query, params).await?)
     }
-    pub async fn prepare(&mut self, query: &str) -> Result<tokio_postgres::Statement, Error> {
+    pub async fn prepare(&mut self, query: &str) -> Result<Statement, Error> {
         Ok(self.connection.prepare(query).await?)
     }
-    pub async fn query(
+    pub async fn query<'b>(
         &mut self,
-        stmt: &tokio_postgres::Statement,
-        params: Params<'a>,
-    ) -> Result<Vec<tokio_postgres::Row>, Error> {
+        stmt: &Statement,
+        params: Params<'b>,
+    ) -> Result<Results, Error> {
         Ok(self.connection.query(stmt, params).await?)
     }
     pub async fn batch(&mut self, sql: &str) -> Result<(), Error> {

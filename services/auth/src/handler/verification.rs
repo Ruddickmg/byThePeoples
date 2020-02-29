@@ -14,7 +14,7 @@ fn invalid_credentials(name: &str) -> HttpResponse {
     HttpResponse::Unauthorized().finish()
 }
 
-pub async fn authenticate_credentials(
+pub async fn authenticate_credentials<'a>(
     state: web::Data<model::ServiceState>,
     credentials: web::Json<model::AuthRequest>,
 ) -> HttpResponse {
@@ -29,13 +29,13 @@ pub async fn authenticate_credentials(
                     Ok(correct_password) => {
                         if correct_password {
                             match jwt::generate_token(auth_record) {
-                                Ok(token) => HttpResponse::Ok()
+                                Some(token) => HttpResponse::Ok()
                                     .header(
                                         http::header::AUTHORIZATION,
                                         format!("Bearer {}", token),
                                     )
                                     .finish(),
-                                Err(error) => server_error(error),
+                                None => server_error(String::from("Failed to create jwt")),
                             }
                         } else {
                             invalid_credentials(&user_name)
@@ -59,7 +59,7 @@ mod auth_tests {
     #[actix_rt::test]
     async fn authenticate_credentials_success_status() {
         let db: model::Database = model::initialize().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState { db });
+        let request_state = web::Data::new(model::ServiceState::new(db));
         let request_data = model::AuthRequest {
             name: String::from("hello"),
             password: String::from("world"),
@@ -78,7 +78,7 @@ mod auth_tests {
     #[actix_rt::test]
     async fn authenticate_credentials_header() {
         let db: model::Database = model::initialize().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState { db });
+        let request_state = web::Data::new(model::ServiceState::new(db));
         let request_data = model::AuthRequest {
             name: String::from("hello"),
             password: String::from("world"),
