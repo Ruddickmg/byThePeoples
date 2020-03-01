@@ -1,15 +1,10 @@
-use serde::{Deserialize, Serialize};
 use std::{env, sync};
 
+mod auth_request;
 pub mod credentials;
 
+pub type AuthRequest = auth_request::AuthRequest;
 pub type Database = database::DB;
-
-#[derive(Deserialize, Serialize)]
-pub struct AuthRequest {
-    pub name: String,
-    pub password: String,
-}
 
 pub struct ServiceState {
     pub db: sync::Mutex<Database>,

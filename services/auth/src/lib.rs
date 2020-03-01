@@ -3,6 +3,30 @@ mod handler;
 pub mod model;
 pub mod routes;
 
+pub enum Error {
+    DatabaseError,
+    InternalServerError,
+    Unauthorized,
+}
+
+impl From<database::Error> for Error {
+    fn from(_: database::Error) -> Error {
+        Error::DatabaseError
+    }
+}
+
+impl From<actix_web::error::Error> for Error {
+    fn from(_: actix_web::error::Error) -> Error {
+        Error::InternalServerError
+    }
+}
+
+impl From<argonautica::Error> for Error {
+    fn from(_: argonautica::Error) -> Error {
+        Error::Unauthorized
+    }
+}
+
 pub mod logging {
     pub fn log_error(error: String) {
         println!("Error occurred: {}", error);

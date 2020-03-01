@@ -1,53 +1,27 @@
-use crate::authentication::{jwt, password};
-use crate::model::credentials;
-use crate::{logging, model};
+use crate::{authentication::authorization, model, Error};
 use actix_web::{http, web, HttpResponse};
-
-fn server_error(error: String) -> HttpResponse {
-    logging::log_error(error);
-    HttpResponse::InternalServerError().body("Oops! Something went wrong!")
-}
-
-fn invalid_credentials(name: &str) -> HttpResponse {
-    // probably count amount of invalid login
-    println!("Invalid login made by {}", name);
-    HttpResponse::Unauthorized().finish()
-}
 
 pub async fn authenticate_credentials<'a>(
     state: web::Data<model::ServiceState>,
-    credentials: web::Json<model::AuthRequest>,
+    json: web::Json<model::AuthRequest>,
 ) -> HttpResponse {
-    let mut db = state.db.lock().unwrap();
-    let client = db.client().await.unwrap();
-    let mut auth_credentials = credentials::Model::new(client);
-    let user_name = &credentials.name;
-    if let Ok(maybe_auth_record) = auth_credentials.by_name(&user_name).await {
-        match maybe_auth_record {
-            Some(auth_record) => {
-                match password::authenticate(&credentials.password, &auth_record.hash) {
-                    Ok(correct_password) => {
-                        if correct_password {
-                            match jwt::generate_token(auth_record) {
-                                Some(token) => HttpResponse::Ok()
-                                    .header(
-                                        http::header::AUTHORIZATION,
-                                        format!("Bearer {}", token),
-                                    )
-                                    .finish(),
-                                None => server_error(String::from("Failed to create jwt")),
-                            }
-                        } else {
-                            invalid_credentials(&user_name)
-                        }
-                    }
-                    Err(error) => server_error(error),
-                }
-            }
+    let db = state.db.lock().unwrap();
+    let user_credentials = model::AuthRequest::from(json);
+    match authorization::authorize(user_credentials, db).await {
+        Ok(potential_token) => match potential_token {
+            Some(auth_token) => HttpResponse::Ok()
+                .header(
+                    http::header::AUTHORIZATION,
+                    format!("Bearer {}", auth_token),
+                )
+                .finish(),
             None => HttpResponse::NotFound().finish(),
+        },
+        Err(error) => match error {
+            Error::Unauthorized => HttpResponse::Unauthorized(),
+            _ => HttpResponse::InternalServerError(),
         }
-    } else {
-        HttpResponse::NotFound().finish()
+        .finish(),
     }
 }
 

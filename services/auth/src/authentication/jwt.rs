@@ -1,10 +1,8 @@
 use super::configuration::jwt;
-use crate::model::credentials::Credentials;
+use crate::{model::credentials::Credentials, Error};
 use jsonwebtoken;
 use jsonwebtoken::EncodingKey;
 use serde::{Deserialize, Serialize};
-
-pub const TOKEN_KEY: &str = "Authorization: Bearer";
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Claims {
@@ -13,8 +11,7 @@ struct Claims {
     exp: usize,
 }
 
-// TODO add better error handling here
-pub fn generate_token(credentials: Credentials) -> Option<String> {
+pub fn generate_token(credentials: Credentials) -> Result<String, Error> {
     let Credentials { id, name, .. } = credentials;
     match jsonwebtoken::encode(
         &jsonwebtoken::Header::default(),
@@ -25,7 +22,9 @@ pub fn generate_token(credentials: Credentials) -> Option<String> {
         },
         &EncodingKey::from_secret(&jwt::secret().as_ref()),
     ) {
-        Ok(jwt) => Some(jwt),
-        Err(_) => None,
+        Ok(jwt) => Ok(jwt),
+        Err(_) => Err(Error::from(actix_web::error::ErrorInternalServerError(
+            "Failed to generate JWT",
+        ))),
     }
 }
