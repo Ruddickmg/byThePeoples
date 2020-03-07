@@ -1,17 +1,13 @@
 use crate::model;
-use crate::model::Database;
 use actix_web::{web, HttpResponse};
-use std::sync::MutexGuard;
 
-pub async fn authenticate_credentials<'a, T: database::DatabaseTrait<'a>>(
-    state: web::Data<model::ServiceState<T>>,
+pub async fn authenticate_credentials(
+    state: web::Data<model::ServiceState>,
     json: web::Json<model::AuthRequest>,
 ) -> HttpResponse {
     let _user_credentials = model::AuthRequest::from(json);
-    let client: database::Client<'a>;
-    let mut db: MutexGuard<'a, Database<'a>> = state.db.lock().unwrap();
-
-    client = db.client().await.unwrap();
+    let _db = state.db.lock().unwrap();
+    // let mut client = db.client().await.unwrap();
     // let stmt = client
     //     .prepare("select id from auth.credentials where name = $1")
     //     .await

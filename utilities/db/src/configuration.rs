@@ -5,11 +5,11 @@ pub const POOL_SIZE: u32 = 15;
 const TIME_OUT: u32 = 10;
 
 pub struct Configuration {
-    pub password: String,
-    pub user: String,
-    pub host: String,
-    pub port: String,
-    pub database: String,
+    pub password: &'static str,
+    pub user: &'static str,
+    pub host: &'static str,
+    pub port: &'static str,
+    pub database: &'static str,
 }
 
 impl Configuration {
@@ -46,11 +46,11 @@ mod configuration_test {
         let password = "secret";
         let database = "auth";
         let config = Configuration {
-            user: String::from(user),
-            host: String::from(host),
-            port: String::from(port),
-            password: String::from(password),
-            database: String::from(database),
+            user,
+            host,
+            port,
+            password,
+            database,
         };
         let built = config.build().unwrap();
         assert_eq!(

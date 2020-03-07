@@ -5,36 +5,36 @@ mod auth_request;
 pub mod credentials;
 
 pub type AuthRequest = auth_request::AuthRequest;
-pub type Database<'a> = database::Database<'a>;
+pub type Database = database::Database;
 
-pub struct ServiceState<T: database::DatabaseTrait<'static> {
-    pub db: sync::Mutex<T>,
+const CONFIGURATION: database::Configuration = database::Configuration {
+    database: "postgres",
+    password: "password",
+    user: "postgres",
+    host: "127.0.0.3",
+    port: "8080",
+};
+
+pub struct ServiceState {
+    pub db: sync::Mutex<Database>,
 }
 
-impl<T: database::DatabaseTrait<'static>> ServiceState<T> {
-    pub async fn new(db: T) -> Result<ServiceState, Error> {
+impl ServiceState {
+    pub async fn new() -> Result<ServiceState, Error> {
+        let db = database::ConnectionPool::new(CONFIGURATION).await?;
         Ok(ServiceState {
             db: sync::Mutex::new(db),
         })
     }
-}
-
-pub async fn initialize() -> Result<database::DB, database::Error> {
-    let path_to_migrations = format!(
-        "{}/src/sql/migrations",
-        env::current_dir().unwrap().to_str().unwrap()
-    );
-    let db_config = database::Configuration {
-        database: String::from("postgres"),
-        password: String::from("password"),
-        user: String::from("postgres"),
-        host: String::from("127.0.0.3"),
-        port: String::from("8080"),
-    };
-    let mut db = database::DB::new(db_config).await?;
-    if environment::in_development() {
-        db.migrate(&path_to_migrations).await?;
-        print!("Migration Successful.\n");
+    pub async fn initialize(self) -> Result<ServiceState, database::Error> {
+        let path_to_migrations = format!(
+            "{}/src/sql/migrations",
+            env::current_dir().unwrap().to_str().unwrap()
+        );
+        if environment::in_development() {
+            self.db.lock().unwrap().migrate(&path_to_migrations).await?;
+            print!("Migration Successful.\n");
+        }
+        Ok(self)
     }
-    Ok(db)
 }
