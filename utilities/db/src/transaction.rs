@@ -11,25 +11,25 @@ pub type GenericTransaction<'a> = Box<dyn TransactionTrait<'a> + 'a + Send + Syn
 
 #[async_trait]
 pub trait TransactionTrait<'a>: client::ClientTrait<'a> {
-    async fn commit(self) -> Result<(), Error>;
+    async fn commit(&self) -> Result<(), Error>;
 }
 
 #[async_trait]
 impl<'a> TransactionTrait<'a> for Transaction<'a> {
-    async fn commit(self) -> Result<(), Error> {
+    async fn commit(&self) -> Result<(), Error> {
         self.commit().await
     }
 }
 
 #[async_trait]
 impl<'b> client::ClientTrait<'b> for Transaction<'_> {
-    async fn execute<'a>(self, query: &str, params: Params<'a>) -> Result<u64, Error> {
+    async fn execute<'a>(&self, query: &str, params: Params<'a>) -> Result<u64, Error> {
         self.execute(query, params).await
     }
-    async fn prepare(self, query: &str) -> Result<Statement, Error> {
+    async fn prepare(&self, query: &str) -> Result<Statement, Error> {
         self.prepare(query).await
     }
-    async fn query<'a>(self, query: &Statement, params: Params<'a>) -> Result<Results, Error> {
+    async fn query<'a>(&self, query: &Statement, params: Params<'a>) -> Result<Results, Error> {
         self.query(query, params).await
     }
     async fn batch(&mut self, sql: &str) -> Result<(), Error> {

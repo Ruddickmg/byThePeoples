@@ -27,11 +27,11 @@ impl ServiceState {
         })
     }
     pub async fn initialize(self) -> Result<ServiceState, database::Error> {
-        let path_to_migrations = format!(
-            "{}/src/sql/migrations",
-            env::current_dir().unwrap().to_str().unwrap()
-        );
         if environment::in_development() {
+            let path_to_migrations = format!(
+                "{}/src/sql/migrations",
+                env::current_dir().unwrap().to_str().unwrap()
+            );
             self.db.lock().unwrap().migrate(&path_to_migrations).await?;
             print!("Migration Successful.\n");
         }

@@ -11,9 +11,9 @@ pub type GenericClient<'a> = Box<dyn ClientTrait<'a> + 'a + Send + Sync>;
 
 #[async_trait]
 pub trait ClientTrait<'b> {
-    async fn execute<'a>(self, query: &str, params: Params<'a>) -> Result<u64, Error>;
-    async fn prepare(self, query: &str) -> Result<Statement, Error>;
-    async fn query<'a>(self, stmt: &Statement, params: Params<'a>) -> Result<Results, Error>;
+    async fn execute<'a>(&self, query: &str, params: Params<'a>) -> Result<u64, Error>;
+    async fn prepare(&self, query: &str) -> Result<Statement, Error>;
+    async fn query<'a>(&self, stmt: &Statement, params: Params<'a>) -> Result<Results, Error>;
     async fn batch(&mut self, sql: &str) -> Result<(), Error>;
     async fn transaction(&'b mut self) -> Result<GenericTransaction<'_>, Error>;
     async fn execute_file(&mut self, path: &str) -> Result<(), Error>;
@@ -21,14 +21,14 @@ pub trait ClientTrait<'b> {
 
 #[async_trait]
 impl<'b> ClientTrait<'b> for Client<'b> {
-    async fn execute<'a>(self, query: &str, params: Params<'a>) -> Result<u64, Error> {
+    async fn execute<'a>(&self, query: &str, params: Params<'a>) -> Result<u64, Error> {
         self.execute(query, params).await
     }
-    async fn prepare(self, query: &str) -> Result<Statement, Error> {
+    async fn prepare(&self, query: &str) -> Result<Statement, Error> {
         self.prepare(query).await
     }
 
-    async fn query<'a>(self, query: &Statement, params: Params<'a>) -> Result<Results, Error> {
+    async fn query<'a>(&self, query: &Statement, params: Params<'a>) -> Result<Results, Error> {
         self.query(query, params).await
     }
 
