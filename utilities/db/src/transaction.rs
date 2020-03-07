@@ -7,10 +7,10 @@ pub struct Transaction<'a> {
     transaction: tokio_postgres::Transaction<'a>,
 }
 
-pub type GenericTransaction<'a> = Box<dyn TransactionTrait<'a> + 'a + Send>;
+pub type GenericTransaction<'a> = Box<dyn TransactionTrait<'a> + 'a + Send + Sync>;
 
 #[async_trait]
-pub trait TransactionTrait<'a>: client::GenericClient<'a> {
+pub trait TransactionTrait<'a>: client::ClientTrait<'a> {
     async fn commit(self) -> Result<(), Error>;
 }
 
@@ -22,7 +22,7 @@ impl<'a> TransactionTrait<'a> for Transaction<'a> {
 }
 
 #[async_trait]
-impl<'b> client::GenericClient<'b> for Transaction<'_> {
+impl<'b> client::ClientTrait<'b> for Transaction<'_> {
     async fn execute<'a>(self, query: &str, params: Params<'a>) -> Result<u64, Error> {
         self.execute(query, params).await
     }
@@ -35,7 +35,7 @@ impl<'b> client::GenericClient<'b> for Transaction<'_> {
     async fn batch(&mut self, sql: &str) -> Result<(), Error> {
         self.batch(sql).await
     }
-    async fn transaction(&'b mut self) -> Result<Transaction<'b>, Error> {
+    async fn transaction(&'b mut self) -> Result<GenericTransaction<'b>, Error> {
         self.transaction().await
     }
     async fn execute_file(&mut self, path: &str) -> Result<(), Error> {
@@ -46,8 +46,8 @@ impl<'b> client::GenericClient<'b> for Transaction<'_> {
 impl<'a> Transaction<'a> {
     pub async fn new(
         transaction: tokio_postgres::Transaction<'a>,
-    ) -> Result<Transaction<'a>, Error> {
-        Ok(Transaction { transaction })
+    ) -> Result<GenericTransaction<'a>, Error> {
+        Ok(Box::new(Transaction { transaction }))
     }
     pub async fn commit(self) -> Result<(), Error> {
         Ok(self.transaction.commit().await?)
