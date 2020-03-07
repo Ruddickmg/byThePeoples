@@ -3,6 +3,7 @@ mod handler;
 pub mod model;
 pub mod routes;
 
+#[derive(Debug)]
 pub enum Error {
     DatabaseError,
     InternalServerError,

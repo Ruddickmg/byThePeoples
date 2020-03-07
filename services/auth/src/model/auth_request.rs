@@ -1,7 +1,7 @@
 use actix_web::web;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct AuthRequest {
     pub name: String,
     pub password: String,

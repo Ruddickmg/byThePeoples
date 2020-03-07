@@ -1,24 +1,25 @@
+use crate::Error;
 use std::{env, sync};
 
 mod auth_request;
 pub mod credentials;
 
 pub type AuthRequest = auth_request::AuthRequest;
-pub type Database = database::DB;
+pub type Database<'a> = database::Database<'a>;
 
-pub struct ServiceState {
-    pub db: sync::Mutex<Database>,
+pub struct ServiceState<T: database::DatabaseTrait<'static> {
+    pub db: sync::Mutex<T>,
 }
 
-impl ServiceState {
-    pub fn new(db: Database) -> ServiceState {
-        ServiceState {
+impl<T: database::DatabaseTrait<'static>> ServiceState<T> {
+    pub async fn new(db: T) -> Result<ServiceState, Error> {
+        Ok(ServiceState {
             db: sync::Mutex::new(db),
-        }
+        })
     }
 }
 
-pub async fn initialize() -> Result<Database, database::Error> {
+pub async fn initialize() -> Result<database::DB, database::Error> {
     let path_to_migrations = format!(
         "{}/src/sql/migrations",
         env::current_dir().unwrap().to_str().unwrap()

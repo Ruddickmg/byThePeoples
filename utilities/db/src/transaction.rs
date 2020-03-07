@@ -1,4 +1,4 @@
-use crate::{connection, Error, Params, Results, Statement};
+use crate::{client, Error, Params, Results, Statement};
 use async_trait::async_trait;
 use std::fs;
 use tokio_postgres;
@@ -7,16 +7,11 @@ pub struct Transaction<'a> {
     transaction: tokio_postgres::Transaction<'a>,
 }
 
-pub type GenericTransaction<'a> = Box<dyn TransactionTrait<'a> + 'a>;
+pub type GenericTransaction<'a> = Box<dyn TransactionTrait<'a> + 'a + Send>;
 
 #[async_trait]
-pub trait TransactionTrait<'a> {
+pub trait TransactionTrait<'a>: client::GenericClient<'a> {
     async fn commit(self) -> Result<(), Error>;
-    async fn execute<'b>(&mut self, query: &str, params: Params<'b>) -> Result<u64, Error>;
-    async fn prepare(&mut self, query: &str) -> Result<Statement, Error>;
-    async fn query<'b>(&mut self, stmt: &Statement, params: Params<'b>) -> Result<Results, Error>;
-    async fn batch(&mut self, sql: &str) -> Result<(), Error>;
-    async fn execute_file(&mut self, path: &str) -> Result<(), Error>;
 }
 
 #[async_trait]
@@ -24,17 +19,24 @@ impl<'a> TransactionTrait<'a> for Transaction<'a> {
     async fn commit(self) -> Result<(), Error> {
         self.commit().await
     }
-    async fn execute<'b>(&mut self, query: &str, params: Params<'b>) -> Result<u64, Error> {
+}
+
+#[async_trait]
+impl<'b> client::GenericClient<'b> for Transaction<'_> {
+    async fn execute<'a>(self, query: &str, params: Params<'a>) -> Result<u64, Error> {
         self.execute(query, params).await
     }
-    async fn prepare(&mut self, query: &str) -> Result<Statement, Error> {
+    async fn prepare(self, query: &str) -> Result<Statement, Error> {
         self.prepare(query).await
     }
-    async fn query<'b>(&mut self, stmt: &Statement, params: Params<'b>) -> Result<Results, Error> {
-        self.query(stmt, params).await
+    async fn query<'a>(self, query: &Statement, params: Params<'a>) -> Result<Results, Error> {
+        self.query(query, params).await
     }
     async fn batch(&mut self, sql: &str) -> Result<(), Error> {
         self.batch(sql).await
+    }
+    async fn transaction(&'b mut self) -> Result<Transaction<'b>, Error> {
+        self.transaction().await
     }
     async fn execute_file(&mut self, path: &str) -> Result<(), Error> {
         self.execute_file(path).await
@@ -43,26 +45,17 @@ impl<'a> TransactionTrait<'a> for Transaction<'a> {
 
 impl<'a> Transaction<'a> {
     pub async fn new(
-        connection: &'a mut connection::Connection<'a>,
+        transaction: tokio_postgres::Transaction<'a>,
     ) -> Result<Transaction<'a>, Error> {
-        Ok(Transaction {
-            transaction: connection.transaction().await?,
-        })
+        Ok(Transaction { transaction })
     }
     pub async fn commit(self) -> Result<(), Error> {
         Ok(self.transaction.commit().await?)
     }
-    pub async fn execute<'b>(&mut self, query: &str, params: Params<'b>) -> Result<u64, Error> {
-        Ok(self.transaction.execute(query, params).await?)
-    }
-    pub async fn prepare(&mut self, query: &str) -> Result<Statement, Error> {
+    pub async fn prepare(self, query: &str) -> Result<Statement, Error> {
         Ok(self.transaction.prepare(query).await?)
     }
-    pub async fn query<'b>(
-        &mut self,
-        stmt: &Statement,
-        params: Params<'b>,
-    ) -> Result<Results, Error> {
+    pub async fn query<'b>(self, stmt: &Statement, params: Params<'b>) -> Result<Results, Error> {
         Ok(self.transaction.query(stmt, params).await?)
     }
     pub async fn batch(&mut self, sql: &str) -> Result<(), Error> {

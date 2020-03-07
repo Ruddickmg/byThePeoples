@@ -1,28 +1,45 @@
-use crate::{authentication::authorization, model, Error};
-use actix_web::{http, web, HttpResponse};
+use crate::model;
+use crate::model::Database;
+use actix_web::{web, HttpResponse};
+use std::sync::MutexGuard;
 
-pub async fn authenticate_credentials<'a>(
-    state: web::Data<model::ServiceState>,
+pub async fn authenticate_credentials<'a, T: database::DatabaseTrait<'a>>(
+    state: web::Data<model::ServiceState<T>>,
     json: web::Json<model::AuthRequest>,
 ) -> HttpResponse {
-    let db = state.db.lock().unwrap();
-    let user_credentials = model::AuthRequest::from(json);
-    match authorization::authorize(user_credentials, db).await {
-        Ok(potential_token) => match potential_token {
-            Some(auth_token) => HttpResponse::Ok()
-                .header(
-                    http::header::AUTHORIZATION,
-                    format!("Bearer {}", auth_token),
-                )
-                .finish(),
-            None => HttpResponse::NotFound().finish(),
-        },
-        Err(error) => match error {
-            Error::Unauthorized => HttpResponse::Unauthorized(),
-            _ => HttpResponse::InternalServerError(),
-        }
-        .finish(),
-    }
+    let _user_credentials = model::AuthRequest::from(json);
+    let client: database::Client<'a>;
+    let mut db: MutexGuard<'a, Database<'a>> = state.db.lock().unwrap();
+
+    client = db.client().await.unwrap();
+    // let stmt = client
+    //     .prepare("select id from auth.credentials where name = $1")
+    //     .await
+    //     .unwrap();
+    // client.query(&stmt, &[&"hello?"]).await.unwrap();
+    HttpResponse::Ok().finish()
+    // let mut auth_credentials = credentials::Model::new(client);
+    // if let Some(auth_record) = auth_credentials.by_name(&user_credentials.name).await? {
+    //     if password::authenticate(&user_credentials.password, &auth_record.hash).unwrap() {
+    //         jwt::generate_token(auth_record)?)));
+    //     }
+    // }
+    // match authorization::authorize(user_credentials, db).await {
+    //     Ok(potential_token) => match potential_token {
+    //         Some(auth_token) => HttpResponse::Ok()
+    //             .header(
+    //                 http::header::AUTHORIZATION,
+    //                 format!("Bearer {}", auth_token),
+    //             )
+    //             .finish(),
+    //         None => HttpResponse::NotFound().finish(),
+    //     },
+    //     Err(error) => match error {
+    //         Error::Unauthorized => HttpResponse::Unauthorized(),
+    //         _ => HttpResponse::InternalServerError(),
+    //     }
+    //     .finish(),
+    // }
 }
 
 #[cfg(test)]
@@ -32,8 +49,7 @@ mod auth_tests {
 
     #[actix_rt::test]
     async fn authenticate_credentials_success_status() {
-        let db: model::Database = model::initialize().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState::new(db));
+        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let request_data = model::AuthRequest {
             name: String::from("hello"),
             password: String::from("world"),
@@ -51,8 +67,7 @@ mod auth_tests {
 
     #[actix_rt::test]
     async fn authenticate_credentials_header() {
-        let db: model::Database = model::initialize().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState::new(db));
+        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let request_data = model::AuthRequest {
             name: String::from("hello"),
             password: String::from("world"),
