@@ -18,7 +18,7 @@ pub async fn authenticate_credentials(
             None => HttpResponse::NotFound().finish(),
         },
         Err(error) => match error {
-            Error::Unauthorized => HttpResponse::Unauthorized(),
+            Error::Unauthorized(_) => HttpResponse::Unauthorized(),
             _ => HttpResponse::InternalServerError(),
         }
         .finish(),

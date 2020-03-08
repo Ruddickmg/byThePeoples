@@ -1,3 +1,5 @@
+use serde::export::Formatter;
+
 pub mod authentication;
 mod handler;
 pub mod model;
@@ -5,26 +7,36 @@ pub mod routes;
 
 #[derive(Debug)]
 pub enum Error {
-    DatabaseError,
-    InternalServerError,
-    Unauthorized,
+    DatabaseError(database::Error),
+    InternalServerError(actix_web::error::Error),
+    Unauthorized(argonautica::Error),
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::DatabaseError(error) => write!(f, "{}", error),
+            Error::InternalServerError(error) => write!(f, "{}", error),
+            Error::Unauthorized(error) => write!(f, "{}", error),
+        }
+    }
 }
 
 impl From<database::Error> for Error {
-    fn from(_: database::Error) -> Error {
-        Error::DatabaseError
+    fn from(error: database::Error) -> Error {
+        Error::DatabaseError(error)
     }
 }
 
 impl From<actix_web::error::Error> for Error {
-    fn from(_: actix_web::error::Error) -> Error {
-        Error::InternalServerError
+    fn from(error: actix_web::error::Error) -> Error {
+        Error::InternalServerError(error)
     }
 }
 
 impl From<argonautica::Error> for Error {
-    fn from(_: argonautica::Error) -> Error {
-        Error::Unauthorized
+    fn from(error: argonautica::Error) -> Error {
+        Error::Unauthorized(error)
     }
 }
 
