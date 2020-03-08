@@ -1,4 +1,4 @@
 pub mod authorization;
 mod configuration;
 mod jwt;
-mod password;
+pub mod password;

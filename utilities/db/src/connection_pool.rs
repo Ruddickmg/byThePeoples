@@ -1,0 +1,55 @@
+use crate::{
+    client, configuration, Client, Configuration, Database, Error, Pool, PooledConnection,
+};
+use async_trait::async_trait;
+use std::fs;
+
+const SQL_EXTENSION: &str = "sql";
+
+#[derive(Clone)]
+pub struct ConnectionPool {
+    pool: Pool,
+}
+
+#[async_trait]
+pub trait DatabaseTrait {
+    async fn client(&self) -> Result<Client<'_>, Error>;
+    async fn migrate(&self, path: &str) -> Result<(), Error>;
+}
+
+#[async_trait]
+impl DatabaseTrait for ConnectionPool {
+    async fn client(&self) -> Result<Client<'_>, Error> {
+        self.client().await
+    }
+    async fn migrate(&self, path: &str) -> Result<(), Error> {
+        self.migrate(path).await
+    }
+}
+
+impl ConnectionPool {
+    pub async fn new(cfg: Configuration) -> Result<Database, Error> {
+        let manager =
+            bb8_postgres::PostgresConnectionManager::new(cfg.build()?, tokio_postgres::tls::NoTls);
+        let pool: Pool = bb8::Pool::builder()
+            .max_size(configuration::POOL_SIZE)
+            .build(manager)
+            .await?;
+        if !environment::in_production() {
+            println!("Connected to database.");
+        }
+        Ok(Box::new(ConnectionPool { pool }))
+    }
+    pub async fn client(&self) -> Result<Client<'_>, Error> {
+        Ok(client::Client::new(self.pool.get().await?))
+    }
+    pub async fn migrate(&self, path: &str) -> Result<(), Error> {
+        let sql_files = files::by_extension(path, SQL_EXTENSION);
+        let mut client = self.client().await?;
+        for file_path in sql_files.iter() {
+            let sql = fs::read_to_string(file_path)?;
+            client.batch(&sql).await?;
+        }
+        Ok(())
+    }
+}
