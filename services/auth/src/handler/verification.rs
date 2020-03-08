@@ -29,6 +29,7 @@ pub async fn authenticate_credentials(
 mod auth_tests {
     use super::*;
     use actix_web::{http, test, FromRequest};
+    use mockall::{predicate::*, *};
 
     #[actix_rt::test]
     async fn authenticate_credentials_success_status() {
