@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 files = { path = "../files" }
+mock = { path = "../mock" }
 environment = { path = "../environment" }
 async-trait = "0.1.24"
 futures = "0.3.4"

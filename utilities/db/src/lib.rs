@@ -1,14 +1,13 @@
-use async_trait::async_trait;
 use bb8;
 use bb8_postgres;
 use std::fmt::Formatter;
-use std::{fmt::Display, fs, io};
+use std::{fmt::Display, io};
 use tokio_postgres;
 
 mod client;
 mod configuration;
 mod connection_pool;
-pub mod mock;
+pub mod mocks;
 mod transaction;
 
 pub type Statement = tokio_postgres::Statement;
@@ -17,10 +16,11 @@ pub type Params<'a> = &'a [&'a (dyn tokio_postgres::types::ToSql + Sync)];
 pub type Transaction<'a> = transaction::GenericTransaction<'a>;
 pub type Client<'a> = client::GenericClient<'a>;
 pub type Configuration = configuration::Configuration;
-pub type Database = Box<dyn connection_pool::DatabaseTrait + Send>;
+pub type Database<'a> = Box<dyn connection_pool::DatabaseTrait<'a> + 'a + Send + Sync>;
 
 pub use connection_pool::ConnectionPool;
 
+type Result<T> = std::result::Result<T, Error>;
 type Manager = bb8_postgres::PostgresConnectionManager<tokio_postgres::tls::NoTls>;
 type PooledConnection<'a> = bb8::PooledConnection<'a, Manager>;
 type Pool = bb8::Pool<Manager>;

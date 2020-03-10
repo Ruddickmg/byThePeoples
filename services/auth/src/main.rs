@@ -3,7 +3,7 @@ use btp_auth_server::{connection, model, routes};
 use environment;
 
 const APP_STATE_CREATION_FAILURE: &str = "Failed to create application state";
-const APP_STATE_INITIALIZATION_FAILURE: &str = "Failed to initialize the application state";
+const APP_STATE_INITIALIZATION_FAILURE: &str = "Failed to initialize application state";
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {

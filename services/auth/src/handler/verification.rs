@@ -34,10 +34,10 @@ mod auth_tests {
 
     #[actix_rt::test]
     async fn authenticate_credentials_success_status() {
-        let db = database::mock::Pool::new();
-        let client = database::mock::Client::new();
+        let db = database::mocks::Pool::new();
+        let client = database::mocks::Client::new();
         client.prepare.called_with().returns();
-        client.query.on_call().returns();
+        client.query.returns();
         db.client.returns(client);
         let state = ServiceState {
             db: Mutex::new(Box::new((db))),
