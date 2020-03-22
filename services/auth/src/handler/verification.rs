@@ -20,7 +20,10 @@ pub async fn authenticate_credentials(
         },
         Err(error) => match error {
             Error::Unauthorized(_) => HttpResponse::Unauthorized(),
-            _ => HttpResponse::InternalServerError(),
+            e => {
+                println!("Error: {:#?}", e);
+                HttpResponse::InternalServerError()
+            }
         }
         .finish(),
     }
@@ -29,39 +32,42 @@ pub async fn authenticate_credentials(
 #[cfg(test)]
 mod auth_tests {
     use super::*;
-    use crate::{authentication::password, model::ServiceState};
-    use actix_web::{http, test, FromRequest};
-    use std::sync::Mutex;
+    use crate::{authentication::password, model};
+    use actix_web::{test, FromRequest};
 
     #[actix_rt::test]
     async fn authenticate_credentials_success_status() {
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
-        let mut db = database::ConnectionPool::new(model::TEST_DATABASE_CONFIG)
+        let db = database::ConnectionPool::new(model::TEST_DATABASE_CONFIG)
             .await
             .unwrap();
         let client = db.client().await.unwrap();
         let name = String::from("Fake Johnson");
         let email = String::from("fakeEmail@fakeDomain.com");
+        let password = String::from("password");
         let query =
             String::from("INSERT INTO auth.credentials(name, hash, email) VALUES ($1, $2, $3)");
+        let hashed_password = password::hash_password(&password).unwrap();
         let request_data = model::AuthRequest {
-            name: String::from("hello"),
-            password: String::from("world"),
+            name: String::from(&name),
+            password: String::from(&password),
         };
-        let hashed_password = password::hash_password(&request_data.password).unwrap();
         client
             .execute(&query, &[&name, &hashed_password, &email])
             .await
             .unwrap();
-        // let (req, mut payload) = test::TestRequest::post()
-        //     .set_json(&request_data)
-        //     .to_http_parts();
-        // let json = web::Json::<model::AuthRequest>::from_request(&req, &mut payload)
-        //     .await
-        //     .unwrap();
-        // let resp = authenticate_credentials(request_state, json).await;
-        // assert!(resp.headers().contains_key(http::header::AUTHORIZATION));
-        assert!(true)
+        let (req, mut payload) = test::TestRequest::post()
+            .set_json(&request_data)
+            .to_http_parts();
+        let json = web::Json::<model::AuthRequest>::from_request(&req, &mut payload)
+            .await
+            .unwrap();
+        let resp = authenticate_credentials(request_state, json).await;
+        client
+            .execute("DELETE FROM auth.credentials", &[])
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), 200);
     }
 
     // #[actix_rt::test]

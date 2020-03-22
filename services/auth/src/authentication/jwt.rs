@@ -1,12 +1,15 @@
 use super::configuration::jwt;
-use crate::{model::credentials::Credentials, Error};
+use crate::{
+    model::credentials::{CredentialId, Credentials},
+    Error,
+};
 use jsonwebtoken;
 use jsonwebtoken::EncodingKey;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Claims {
-    id: u32,
+    id: CredentialId,
     name: String,
     exp: usize,
 }

@@ -1,6 +1,8 @@
+pub type CredentialId = i32;
+
 #[derive(Debug)]
 pub struct Credentials {
-    pub id: u32,
+    pub id: CredentialId,
     pub email: String,
     pub name: String,
     pub hash: String,
@@ -41,11 +43,11 @@ impl<'a> Model<'a> {
         Ok(Credentials::from_results(rows))
     }
     pub async fn by_name(&mut self, name: &str) -> CredentialResults {
-        self.get_by_single_param(name, GET_CREDENTIALS_BY_NAME)
+        self.get_by_single_param(GET_CREDENTIALS_BY_NAME, name)
             .await
     }
     pub async fn by_email(&mut self, email: &str) -> CredentialResults {
-        self.get_by_single_param(email, GET_CREDENTIALS_BY_EMAIL)
+        self.get_by_single_param(GET_CREDENTIALS_BY_EMAIL, email)
             .await
     }
 }

@@ -1,7 +1,7 @@
 CREATE SCHEMA IF NOT EXISTS auth;
 
 CREATE TABLE IF NOT EXISTS auth.credentials (
-    id serial,
+    id SERIAL PRIMARY KEY,
     name varchar(255) not null,
     hash varchar(255) not null,
     email varchar(255) not null,
