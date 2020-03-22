@@ -9,20 +9,20 @@ pub struct Client<'a> {
     client: PooledConnection<'a>,
 }
 
-pub type GenericClient = Box<dyn ClientTrait + Send + Sync>;
+pub type GenericClient<'a> = Box<dyn ClientTrait<'a> + 'a + Send + Sync>;
 
 #[async_trait]
-pub trait ClientTrait {
+pub trait ClientTrait<'b> {
     async fn execute<'a>(&self, query: &str, params: Params<'a>) -> Result<u64>;
     async fn prepare(&self, query: &str) -> Result<Statement>;
     async fn query<'a>(&self, stmt: &Statement, params: Params<'a>) -> Result<Results>;
     async fn batch(&mut self, sql: &str) -> Result<()>;
-    async fn transaction(&mut self) -> Result<GenericTransaction<'_>>;
+    async fn transaction(&'b mut self) -> Result<GenericTransaction<'b>>;
     async fn execute_file(&mut self, path: &str) -> Result<()>;
 }
 
 #[async_trait]
-impl<'b> ClientTrait for Client<'b> {
+impl<'b> ClientTrait<'b> for Client<'b> {
     async fn execute<'a>(&self, query: &str, params: Params<'a>) -> Result<u64> {
         self.execute(query, params).await
     }

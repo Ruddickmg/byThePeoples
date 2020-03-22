@@ -10,7 +10,7 @@ pub struct Transaction<'a> {
 pub type GenericTransaction<'a> = Box<dyn TransactionTrait<'a> + 'a + Send + Sync>;
 
 #[async_trait]
-pub trait TransactionTrait<'a>: client::ClientTrait {
+pub trait TransactionTrait<'a>: client::ClientTrait<'a> {
     async fn commit(&self) -> Result<()>;
 }
 
@@ -22,7 +22,7 @@ impl<'a> TransactionTrait<'a> for Transaction<'a> {
 }
 
 #[async_trait]
-impl<'b> client::ClientTrait for Transaction<'_> {
+impl<'b> client::ClientTrait<'b> for Transaction<'b> {
     async fn execute<'a>(&self, query: &str, params: Params<'a>) -> Result<u64> {
         self.execute(query, params).await
     }

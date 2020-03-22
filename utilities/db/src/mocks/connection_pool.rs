@@ -14,7 +14,7 @@ impl MockConnectionPool {
             migrate: mock::Method::new("migrate"),
         }))
     }
-    pub async fn client(&mut self) -> Result<Client> {
+    pub async fn client(&mut self) -> Result<Client<'_>> {
         self.client.call()
     }
     pub async fn migrate(&mut self, _: &str) -> Result<()> {

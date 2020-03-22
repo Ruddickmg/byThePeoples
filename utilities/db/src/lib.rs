@@ -7,14 +7,14 @@ use tokio_postgres;
 mod client;
 mod configuration;
 mod connection_pool;
-pub mod mocks;
+// pub mod mocks;
 mod transaction;
 
 pub type Statement = tokio_postgres::Statement;
 pub type Results = Vec<tokio_postgres::Row>;
 pub type Params<'a> = &'a [&'a (dyn tokio_postgres::types::ToSql + Sync)];
 pub type Transaction<'a> = transaction::GenericTransaction<'a>;
-pub type Client = client::GenericClient;
+pub type Client<'a> = client::GenericClient<'a>;
 pub type Configuration = configuration::Configuration;
 pub type Database = Box<dyn connection_pool::DatabaseTrait + Send + Sync>;
 

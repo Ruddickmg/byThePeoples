@@ -11,7 +11,7 @@ pub struct ConnectionPool {
 
 #[async_trait]
 pub trait DatabaseTrait {
-    async fn client(&self) -> Result<Client>;
+    async fn client(&self) -> Result<Client<'_>>;
     async fn migrate(&self, path: &str) -> Result<()>;
 }
 
@@ -28,7 +28,7 @@ impl ConnectionPool {
         }
         Ok(Box::new(ConnectionPool { pool }))
     }
-    pub async fn client(&self) -> Result<Client> {
+    pub async fn client(&self) -> Result<Client<'_>> {
         Ok(client::Client::new(self.pool.get().await?))
     }
     pub async fn migrate(&self, path: &str) -> Result<()> {
@@ -44,7 +44,7 @@ impl ConnectionPool {
 
 #[async_trait]
 impl DatabaseTrait for ConnectionPool {
-    async fn client(&self) -> Result<Client> {
+    async fn client(&self) -> Result<Client<'_>> {
         self.client().await
     }
     async fn migrate(&self, path: &str) -> Result<()> {

@@ -16,7 +16,7 @@ pub struct MockClient<'a> {
 }
 
 #[async_trait]
-impl<'b> ClientTrait for MockClient<'b> {
+impl<'b> ClientTrait<'b> for MockClient<'b> {
     async fn execute<'a>(&self, query: &str, params: Params<'a>) -> Result<u64> {
         self.execute(query, params).await
     }
