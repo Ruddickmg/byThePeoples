@@ -23,7 +23,6 @@ pub async fn authenticate_credentials(
         }
         .finish(),
     }
-    HttpResponse::Ok().finish()
 }
 
 #[cfg(test)]
