@@ -1,0 +1,9 @@
+secrets/plans
+secrets/dbCertification
+secrets
+services/*/**/target
+.env
+*/**/target
+*/**/node_modules
+*/**/Dockerfile
+*/**/dist
