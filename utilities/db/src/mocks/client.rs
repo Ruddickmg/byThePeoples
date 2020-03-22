@@ -16,7 +16,7 @@ pub struct MockClient<'a> {
 }
 
 #[async_trait]
-impl<'b> ClientTrait<'b> for MockClient<'b> {
+impl<'b> ClientTrait for MockClient<'b> {
     async fn execute<'a>(&self, query: &str, params: Params<'a>) -> Result<u64> {
         self.execute(query, params).await
     }
@@ -42,7 +42,7 @@ impl<'b> ClientTrait<'b> for MockClient<'b> {
 }
 
 impl<'b> MockClient<'b> {
-    pub fn new() -> GenericClient<'b> {
+    pub fn new() -> GenericClient {
         Box::new(MockClient {
             execute: mock::Method::new("execute"),
             prepare: mock::Method::new("prepare"),

@@ -23,7 +23,7 @@ impl<'a> TransactionTrait<'a> for MockTransaction {
 }
 
 #[async_trait]
-impl<'b> client::ClientTrait<'b> for MockTransaction {
+impl<'b> client::ClientTrait for MockTransaction {
     async fn execute<'a>(&self, query: &str, params: Params<'a>) -> Result<u64> {
         self.execute(query, params).await
     }

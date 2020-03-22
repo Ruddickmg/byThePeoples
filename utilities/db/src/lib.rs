@@ -14,9 +14,9 @@ pub type Statement = tokio_postgres::Statement;
 pub type Results = Vec<tokio_postgres::Row>;
 pub type Params<'a> = &'a [&'a (dyn tokio_postgres::types::ToSql + Sync)];
 pub type Transaction<'a> = transaction::GenericTransaction<'a>;
-pub type Client<'a> = client::GenericClient<'a>;
+pub type Client = client::GenericClient;
 pub type Configuration = configuration::Configuration;
-pub type Database<'a> = Box<dyn connection_pool::DatabaseTrait<'a> + 'a + Send + Sync>;
+pub type Database = Box<dyn connection_pool::DatabaseTrait + Send + Sync>;
 
 pub use connection_pool::ConnectionPool;
 
