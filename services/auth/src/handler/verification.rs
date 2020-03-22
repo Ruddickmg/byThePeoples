@@ -28,10 +28,8 @@ pub async fn authenticate_credentials(
 #[cfg(test)]
 mod auth_tests {
     use super::*;
-    use crate::authentication::password::hash_password;
     use crate::{authentication::password, model, utilities::test as test_helper};
     use actix_web::{test, FromRequest};
-    use std::alloc::handle_alloc_error;
 
     #[actix_rt::test]
     async fn authenticate_credentials_success_status() {
