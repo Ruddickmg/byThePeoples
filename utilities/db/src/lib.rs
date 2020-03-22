@@ -7,7 +7,6 @@ use tokio_postgres;
 mod client;
 mod configuration;
 mod connection_pool;
-// pub mod mocks;
 mod transaction;
 
 pub type Statement = tokio_postgres::Statement;

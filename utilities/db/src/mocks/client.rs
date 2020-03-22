@@ -42,7 +42,7 @@ impl<'b> ClientTrait<'b> for MockClient<'b> {
 }
 
 impl<'b> MockClient<'b> {
-    pub fn new() -> GenericClient {
+    pub fn new() -> GenericClient<'b> {
         Box::new(MockClient {
             execute: mock::Method::new("execute"),
             prepare: mock::Method::new("prepare"),
