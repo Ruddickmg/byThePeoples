@@ -4,6 +4,7 @@ pub mod authentication;
 mod handler;
 pub mod model;
 pub mod routes;
+mod utilities;
 
 #[derive(Debug)]
 pub enum Error {

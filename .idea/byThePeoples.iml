@@ -34,6 +34,10 @@
       <sourceFolder url="file://$MODULE_DIR$/utilities/mocker/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/utilities/mocker/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/utilities/mocker/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/utilities/status_codes/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/utilities/status_codes/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/utilities/status_codes/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/utilities/status_codes/benches" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/api/target" />
       <excludeFolder url="file://$MODULE_DIR$/postgres_seeder/target" />
       <excludeFolder url="file://$MODULE_DIR$/services/api/target" />
@@ -42,6 +46,7 @@
       <excludeFolder url="file://$MODULE_DIR$/utilities/environment/target" />
       <excludeFolder url="file://$MODULE_DIR$/utilities/files/target" />
       <excludeFolder url="file://$MODULE_DIR$/utilities/mocker/target" />
+      <excludeFolder url="file://$MODULE_DIR$/utilities/status_codes/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
