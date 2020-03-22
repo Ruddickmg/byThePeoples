@@ -7,7 +7,7 @@ pub mod credentials;
 pub type AuthRequest = auth_request::AuthRequest;
 pub type Database = database::Database;
 
-const CONFIGURATION: database::Configuration = database::Configuration {
+pub const TEST_DATABASE_CONFIG: database::Configuration = database::Configuration {
     database: "postgres",
     password: "password",
     user: "postgres",
@@ -21,7 +21,7 @@ pub struct ServiceState {
 
 impl ServiceState {
     pub async fn new() -> Result<ServiceState, Error> {
-        let db = database::ConnectionPool::new(CONFIGURATION).await?;
+        let db = database::ConnectionPool::new(TEST_DATABASE_CONFIG).await?;
         Ok(ServiceState {
             db: sync::Mutex::new(db),
         })

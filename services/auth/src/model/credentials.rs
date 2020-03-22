@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct Credentials {
     pub id: u32,
     pub email: String,

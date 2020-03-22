@@ -11,35 +11,36 @@ pub type GenericTransaction<'a> = Box<dyn TransactionTrait<'a> + 'a + Send + Syn
 
 #[async_trait]
 pub trait TransactionTrait<'a>: client::ClientTrait<'a> {
-    async fn commit(&self) -> Result<()>;
+    async fn commit(self) -> Result<()>;
 }
 
 #[async_trait]
 impl<'a> TransactionTrait<'a> for Transaction<'a> {
-    async fn commit(&self) -> Result<()> {
-        self.commit().await
+    async fn commit(self) -> Result<()> {
+        Ok(self.transaction.commit().await?)
     }
 }
 
 #[async_trait]
-impl<'b> client::ClientTrait<'b> for Transaction<'b> {
-    async fn execute<'a>(&self, query: &str, params: Params<'a>) -> Result<u64> {
-        self.execute(query, params).await
+impl<'a> client::ClientTrait<'a> for Transaction<'a> {
+    async fn execute<'b>(&self, query: &str, params: Params<'b>) -> Result<u64> {
+        Ok(self.transaction.execute(query, params).await?)
     }
     async fn prepare(&self, query: &str) -> Result<Statement> {
-        self.prepare(query).await
+        Ok(self.transaction.prepare(query).await?)
     }
-    async fn query<'a>(&self, query: &Statement, params: Params<'a>) -> Result<Results> {
-        self.query(query, params).await
+    async fn query<'b>(&self, stmt: &Statement, params: Params<'b>) -> Result<Results> {
+        Ok(self.transaction.query(stmt, params).await?)
     }
-    async fn batch(&mut self, sql: &str) -> Result<()> {
-        self.batch(sql).await
+    async fn batch(&self, sql: &str) -> Result<()> {
+        Ok(self.transaction.batch_execute(sql).await?)
     }
-    async fn transaction(&'b mut self) -> Result<GenericTransaction<'b>> {
-        self.transaction().await
+    async fn execute_file(&self, path: &str) -> Result<()> {
+        let sql = fs::read_to_string(path)?;
+        Ok(self.batch(&sql).await?)
     }
-    async fn execute_file(&mut self, path: &str) -> Result<()> {
-        self.execute_file(path).await
+    async fn transaction(&'a mut self) -> Result<GenericTransaction<'a>> {
+        unimplemented!()
     }
 }
 
@@ -48,21 +49,5 @@ impl<'a> Transaction<'a> {
         transaction: tokio_postgres::Transaction<'a>,
     ) -> Result<GenericTransaction<'a>> {
         Ok(Box::new(Transaction { transaction }))
-    }
-    pub async fn commit(self) -> Result<()> {
-        Ok(self.transaction.commit().await?)
-    }
-    pub async fn prepare(self, query: &str) -> Result<Statement> {
-        Ok(self.transaction.prepare(query).await?)
-    }
-    pub async fn query<'b>(self, stmt: &Statement, params: Params<'b>) -> Result<Results> {
-        Ok(self.transaction.query(stmt, params).await?)
-    }
-    pub async fn batch(&mut self, sql: &str) -> Result<()> {
-        Ok(self.transaction.batch_execute(sql).await?)
-    }
-    pub async fn execute_file(&mut self, path: &str) -> Result<()> {
-        let sql = fs::read_to_string(path)?;
-        Ok(self.batch(&sql).await?)
     }
 }

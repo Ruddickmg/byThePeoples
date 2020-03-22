@@ -11,8 +11,8 @@ pub struct ConnectionPool {
 
 #[async_trait]
 pub trait DatabaseTrait {
-    async fn client(&mut self) -> Result<Client<'_>>;
-    async fn migrate(&mut self, path: &str) -> Result<()>;
+    async fn client(&self) -> Result<Client<'_>>;
+    async fn migrate(&self, path: &str) -> Result<()>;
 }
 
 impl ConnectionPool {
@@ -28,14 +28,16 @@ impl ConnectionPool {
         }
         Ok(Box::new(ConnectionPool { pool }))
     }
-    pub async fn client(&mut self) -> Result<Client<'_>> {
+    pub async fn client(&self) -> Result<Client<'_>> {
         Ok(client::Client::new(self.pool.get().await?))
     }
-    pub async fn migrate(&mut self, path: &str) -> Result<()> {
+    pub async fn migrate(&self, path: &str) -> Result<()> {
         let sql_files = files::by_extension(path, SQL_EXTENSION);
-        let mut client = self.client().await?;
+        println!("files: {:#?}", sql_files);
+        let client = self.client().await?;
         for file_path in sql_files.iter() {
             let sql = fs::read_to_string(file_path)?;
+            println!("sql {}", sql);
             client.batch(&sql).await?;
         }
         Ok(())
@@ -44,10 +46,10 @@ impl ConnectionPool {
 
 #[async_trait]
 impl DatabaseTrait for ConnectionPool {
-    async fn client(&mut self) -> Result<Client<'_>> {
+    async fn client(&self) -> Result<Client<'_>> {
         self.client().await
     }
-    async fn migrate(&mut self, path: &str) -> Result<()> {
+    async fn migrate(&self, path: &str) -> Result<()> {
         self.migrate(path).await
     }
 }
