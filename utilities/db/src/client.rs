@@ -1,41 +1,50 @@
-use crate::{connection, transaction};
-use std::{fs, marker};
-use tokio_postgres;
+use crate::{
+    transaction::{GenericTransaction, Transaction},
+    Params, PooledConnection, Result, Results, Statement,
+};
+use async_trait::async_trait;
+use std::fs;
 
 pub struct Client<'a> {
-    connection: connection::Client<'a>,
+    connection: PooledConnection<'a>,
+}
+
+pub type GenericClient<'a> = Box<dyn ClientTrait<'a> + 'a + Send + Sync>;
+
+#[async_trait]
+pub trait ClientTrait<'a> {
+    async fn execute<'b>(&self, query: &str, params: Params<'b>) -> Result<u64>;
+    async fn prepare(&self, query: &str) -> Result<Statement>;
+    async fn query<'b>(&self, stmt: &Statement, params: Params<'b>) -> Result<Results>;
+    async fn batch(&self, sql: &str) -> Result<()>;
+    async fn execute_file(&self, path: &str) -> Result<()>;
+    async fn transaction(&'a mut self) -> Result<GenericTransaction<'a>>;
+}
+
+#[async_trait]
+impl<'a> ClientTrait<'a> for Client<'a> {
+    async fn execute<'b>(&self, query: &str, params: Params<'b>) -> Result<u64> {
+        Ok(self.connection.execute(query, params).await?)
+    }
+    async fn prepare(&self, query: &str) -> Result<Statement> {
+        Ok(self.connection.prepare(query).await?)
+    }
+    async fn query<'b>(&self, stmt: &Statement, params: Params<'b>) -> Result<Results> {
+        Ok(self.connection.query(stmt, params).await?)
+    }
+    async fn batch(&self, sql: &str) -> Result<()> {
+        Ok(self.connection.batch_execute(sql).await?)
+    }
+    async fn execute_file(&self, path: &str) -> Result<()> {
+        Ok(self.batch(&fs::read_to_string(path)?).await?)
+    }
+    async fn transaction(&'a mut self) -> Result<GenericTransaction<'a>> {
+        Ok(Transaction::new(self.connection.transaction().await?).await?)
+    }
 }
 
 impl<'a> Client<'a> {
-    pub fn new(client: connection::Client<'a>) -> Client<'a> {
-        Client { connection: client }
-    }
-    pub async fn execute(
-        &mut self,
-        query: &str,
-        params: &[&(dyn tokio_postgres::types::ToSql + marker::Sync)],
-    ) -> Result<u64, tokio_postgres::Error> {
-        self.connection.execute(query, params).await
-    }
-    pub async fn prepare(
-        &mut self,
-        query: &str,
-    ) -> Result<tokio_postgres::Statement, tokio_postgres::Error> {
-        self.connection.prepare(query).await
-    }
-    pub async fn batch(&mut self, sql: &str) -> Result<(), tokio_postgres::Error> {
-        self.connection.batch_execute(sql).await
-    }
-    pub async fn transaction(
-        &'a mut self,
-    ) -> Result<transaction::Transaction<'a>, tokio_postgres::Error> {
-        transaction::Transaction::new(&mut self.connection).await
-    }
-    pub async fn execute_file(&mut self, path: &str) -> Result<(), tokio_postgres::Error> {
-        if let Ok(sql) = fs::read_to_string(path) {
-            self.batch(&sql).await
-        } else {
-            panic!(format!("Could not get file contents from {}", path));
-        }
+    pub fn new(connection: PooledConnection<'a>) -> GenericClient {
+        Box::new(Client { connection })
     }
 }

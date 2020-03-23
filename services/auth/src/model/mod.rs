@@ -1,46 +1,35 @@
-use database::configuration;
-use serde::{Deserialize, Serialize};
-use std::env;
-pub mod user;
+use crate::{configuration::database as config, Error};
+use std::{env, sync};
 
-pub type Database = database::DB;
+mod auth_request;
+mod credential_request;
+pub mod credentials;
 
-#[derive(Deserialize, Serialize)]
-pub struct AuthRequest {
-    pub name: String,
-    pub password: String,
-}
+pub type AuthRequest = auth_request::AuthRequest;
+pub type Credentials = credentials::Credentials;
+pub type CredentialRequest = credential_request::CredentialRequest;
+pub type Database = database::Database;
 
 pub struct ServiceState {
-    pub db: Database,
+    pub db: sync::Mutex<Database>,
 }
 
-pub async fn initialize() -> Result<Database, ()> {
-    let path_to_migrations = format!(
-        "path {}/src/sql/migrations",
-        env::current_dir().unwrap().to_str().unwrap()
-    );
-    println!("path to migrations: {}", path_to_migrations);
-    let db_config = configuration::Configuration {
-        database: String::from("postgres"),
-        password: String::from("password"),
-        user: String::from("postgres"),
-        host: String::from("127.0.0.3"),
-        port: String::from("8080"),
-    };
-    match database::DB::new(db_config).await {
-        Ok(mut db) => {
-            if environment::in_development() {
-                match db
-                    .migrate("/home/moon/web/byThePeoples/services/auth/src/sql/migrations")
-                    .await
-                {
-                    Ok(_) => print!("Migration Successful.\n"),
-                    Err(error) => panic!(format!("Error running migrations: {:?}", error)),
-                };
-            }
-            Ok(db)
+impl ServiceState {
+    pub async fn new() -> Result<ServiceState, Error> {
+        let db = database::ConnectionPool::new(config::TEST_DATABASE_CONFIG).await?;
+        Ok(ServiceState {
+            db: sync::Mutex::new(db),
+        })
+    }
+    pub async fn initialize(self) -> Result<ServiceState, database::Error> {
+        if environment::in_development() {
+            let path_to_migrations = format!(
+                "{}/src/sql/migrations",
+                env::current_dir().unwrap().to_str().unwrap()
+            );
+            self.db.lock().unwrap().migrate(&path_to_migrations).await?;
+            print!("Migration Successful.\n");
         }
-        Err(error) => panic!("Could not connect to database, Error: {:?}", error),
+        Ok(self)
     }
 }

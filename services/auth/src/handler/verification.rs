@@ -1,61 +1,52 @@
-use crate::authentication::{jwt, password};
-use crate::logging;
-use crate::model;
-use crate::model::user;
-use actix_web::{http, web, HttpResponse};
-use database::DB;
-
-fn server_error(error: String) -> HttpResponse {
-    logging::log_error(error);
-    HttpResponse::InternalServerError().body("Oops! Something went wrong!")
-}
-
-fn invalid_credentials(name: &str) -> HttpResponse {
-    // probably count amount of invalid login
-    println!("Invalid login made by {}", name);
-    HttpResponse::Unauthorized().finish()
-}
+use crate::{
+    authentication::{authorization, jwt},
+    model, Error,
+};
+use actix_web::{web, HttpResponse};
 
 pub async fn authenticate_credentials(
     state: web::Data<model::ServiceState>,
-    credentials: web::Json<model::AuthRequest>,
+    json: web::Json<model::AuthRequest>,
 ) -> HttpResponse {
-    let auth_credentials = model::Credentials::new(&state.db);
-    let user_name = &credentials.name;
-    if let Ok(auth_record) = auth_credentials.by_name(&user_name) {
-        match password::authenticate(&credentials.password, &auth_record.hash) {
-            Ok(correct_password) => {
-                if correct_password {
-                    match jwt::generate_token(auth_record) {
-                        Ok(token) => HttpResponse::Ok()
-                            .header(http::header::AUTHORIZATION, format!("Bearer {}", token))
-                            .finish(),
-                        Err(error) => server_error(error),
-                    }
-                } else {
-                    invalid_credentials(&username)
-                }
+    let user_credentials = model::AuthRequest::from(json);
+    let db = state.db.lock().unwrap();
+    match authorization::authorize(user_credentials, db).await {
+        Ok(stored_credentials) => match stored_credentials {
+            Some(credentials) => match jwt::set_auth_header(HttpResponse::Ok(), credentials) {
+                Ok(authenticated_response) => authenticated_response,
+                Err(_) => HttpResponse::InternalServerError().finish(),
+            },
+            None => return HttpResponse::NotFound().finish(),
+        },
+        Err(error) => {
+            return match error {
+                Error::Unauthorized(_) => HttpResponse::Unauthorized(),
+                _ => HttpResponse::InternalServerError(),
             }
-            Err(error) => server_error(error),
+            .finish()
         }
-    } else {
-        HttpResponse::NotFound().finish()
     }
 }
 
 #[cfg(test)]
 mod auth_tests {
     use super::*;
+    use crate::{authentication::password, model, utilities::test as test_helper};
     use actix_web::{http, test, FromRequest};
 
     #[actix_rt::test]
     async fn authenticate_credentials_success_status() {
-        let db: model::Database = model::initialize().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState { db });
+        let helper = test_helper::Helper::new().await.unwrap();
+        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let (name, email, password) = helper.fake_credentials();
+        let hashed_password = password::hash_password(&password).unwrap();
         let request_data = model::AuthRequest {
-            name: String::from("hello"),
-            password: String::from("world"),
+            name: String::from(&name),
+            password: String::from(&password),
         };
+        helper
+            .add_credentials(&[&name, &hashed_password, &email])
+            .await;
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
@@ -63,17 +54,42 @@ mod auth_tests {
             .await
             .unwrap();
         let resp = authenticate_credentials(request_state, json).await;
-
-        assert_eq!(resp.status(), http::StatusCode::OK);
+        helper.delete_credentials_by_name(&name).await;
+        assert_eq!(resp.status(), status_codes::OKAY);
     }
 
     #[actix_rt::test]
-    async fn authenticate_credentials_header() {
-        let db: model::Database = model::initialize().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState { db });
+    async fn authenticate_credentials_sets_auth_header() {
+        let helper = test_helper::Helper::new().await.unwrap();
+        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let (name, email, password) = helper.fake_credentials();
+        let hashed_password = password::hash_password(&password).unwrap();
         let request_data = model::AuthRequest {
-            name: String::from("hello"),
-            password: String::from("world"),
+            name: String::from(&name),
+            password: String::from(&password),
+        };
+        helper
+            .add_credentials(&[&name, &hashed_password, &email])
+            .await;
+        let (req, mut payload) = test::TestRequest::post()
+            .set_json(&request_data)
+            .to_http_parts();
+        let json = web::Json::<model::AuthRequest>::from_request(&req, &mut payload)
+            .await
+            .unwrap();
+        let resp = authenticate_credentials(request_state, json).await;
+        helper.delete_credentials_by_name(&name).await;
+        assert!(resp.headers().contains_key(http::header::AUTHORIZATION));
+    }
+
+    #[actix_rt::test]
+    async fn errors_with_not_found_if_no_record_exists() {
+        let helper = test_helper::Helper::new().await.unwrap();
+        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let (name, _email, password) = helper.fake_credentials();
+        let request_data = model::AuthRequest {
+            name: String::from(&name),
+            password: String::from(&password),
         };
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
@@ -82,6 +98,43 @@ mod auth_tests {
             .await
             .unwrap();
         let resp = authenticate_credentials(request_state, json).await;
-        assert!(resp.headers().contains_key(http::header::AUTHORIZATION));
+        assert_eq!(resp.status(), status_codes::NOT_FOUND);
     }
+
+    #[actix_rt::test]
+    async fn errors_with_unauthorized_if_passwords_do_not_match() {
+        let helper = test_helper::Helper::new().await.unwrap();
+        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let (name, email, password) = helper.fake_credentials();
+        let hashed_password = password::hash_password(&password).unwrap();
+        helper
+            .add_credentials(&[&name, &email, &hashed_password])
+            .await;
+        let request_data = model::AuthRequest {
+            name: String::from(&name),
+            password: String::from("Incorrect password"),
+        };
+        let (req, mut payload) = test::TestRequest::post()
+            .set_json(&request_data)
+            .to_http_parts();
+        let json = web::Json::<model::AuthRequest>::from_request(&req, &mut payload)
+            .await
+            .unwrap();
+        let resp = authenticate_credentials(request_state, json).await;
+        helper.delete_credentials_by_name(&name).await;
+        assert_eq!(resp.status(), status_codes::UNAUTHORIZED);
+    }
+
+    // TODO figure out how to handle errors which occur when the arguments are incorrect (happens outside code)
+    // #[actix_rt::test]
+    // async fn errors_with_unprocessable_entity_if_invalid_data_is_provided() {
+    //     let helper = test_helper::Helper::new().await.unwrap();
+    //     let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+    //     let (req, mut payload) = test::TestRequest::post().set_json(&{}).to_http_parts();
+    //     let json = web::Json::<model::AuthRequest>::from_request(&req, &mut payload)
+    //         .await
+    //         .unwrap();
+    //     let resp = authenticate_credentials(request_state, json).await;
+    //     assert_eq!(resp.status(), status_codes::UNPROCESSABLE_ENTITY);
+    // }
 }

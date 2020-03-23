@@ -1,39 +1,23 @@
 extern crate argonautica;
 
-use super::configuration::hash;
+use crate::{configuration::hash, Error};
 use argonautica::{Hasher, Verifier};
 
-pub fn handle_argonautica_error<T>(
-    result: Result<T, argonautica::Error>,
-    message: &str,
-) -> Result<T, String> {
-    match result {
-        Ok(value) => Ok(value),
-        _ => Err(format!("{}", message)),
-    }
-}
-
-pub fn hash_password(password: &str) -> Result<String, String> {
+pub fn hash_password(password: &str) -> Result<String, Error> {
     let mut hasher = Hasher::default();
-    handle_argonautica_error(
-        hasher
-            .with_password(password)
-            .with_secret_key(hash::secret())
-            .hash(),
-        "An error occurred while hashing password",
-    )
+    Ok(hasher
+        .with_password(password)
+        .with_secret_key(hash::secret())
+        .hash()?)
 }
 
-pub fn authenticate(password: &str, hash: &str) -> Result<bool, String> {
+pub fn authenticate(password: &str, hash: &str) -> Result<bool, Error> {
     let mut verifier = Verifier::default();
-    handle_argonautica_error(
-        verifier
-            .with_hash(hash)
-            .with_password(password)
-            .with_secret_key(hash::secret())
-            .verify(),
-        "An error occurred while authenticating the a password",
-    )
+    Ok(verifier
+        .with_hash(hash)
+        .with_password(password)
+        .with_secret_key(hash::secret())
+        .verify()?)
 }
 
 // ---
