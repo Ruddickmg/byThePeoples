@@ -1,19 +1,14 @@
-use crate::Error;
+use crate::{configuration::database as config, Error};
 use std::{env, sync};
 
 mod auth_request;
+mod credential_request;
 pub mod credentials;
 
 pub type AuthRequest = auth_request::AuthRequest;
+pub type Credentials = credentials::Credentials;
+pub type CredentialRequest = credential_request::CredentialRequest;
 pub type Database = database::Database;
-
-pub const TEST_DATABASE_CONFIG: database::Configuration = database::Configuration {
-    database: "postgres",
-    password: "password",
-    user: "postgres",
-    host: "127.0.0.3",
-    port: "8080",
-};
 
 pub struct ServiceState {
     pub db: sync::Mutex<Database>,
@@ -21,7 +16,7 @@ pub struct ServiceState {
 
 impl ServiceState {
     pub async fn new() -> Result<ServiceState, Error> {
-        let db = database::ConnectionPool::new(TEST_DATABASE_CONFIG).await?;
+        let db = database::ConnectionPool::new(config::TEST_DATABASE_CONFIG).await?;
         Ok(ServiceState {
             db: sync::Mutex::new(db),
         })

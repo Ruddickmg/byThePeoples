@@ -1,8 +1,10 @@
 use serde::export::Formatter;
 
 pub mod authentication;
+mod configuration;
 mod handler;
 pub mod model;
+mod repository;
 pub mod routes;
 mod utilities;
 

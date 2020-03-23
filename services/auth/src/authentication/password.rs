@@ -1,7 +1,6 @@
 extern crate argonautica;
 
-use super::configuration::hash;
-use crate::Error;
+use crate::{configuration::hash, Error};
 use argonautica::{Hasher, Verifier};
 
 pub fn hash_password(password: &str) -> Result<String, Error> {

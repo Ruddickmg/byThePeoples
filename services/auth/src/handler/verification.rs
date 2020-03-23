@@ -1,5 +1,8 @@
-use crate::{authentication::authorization, model, Error};
-use actix_web::{http, web, HttpResponse};
+use crate::{
+    authentication::{authorization, jwt},
+    model, Error,
+};
+use actix_web::{web, HttpResponse};
 
 pub async fn authenticate_credentials(
     state: web::Data<model::ServiceState>,
@@ -8,20 +11,20 @@ pub async fn authenticate_credentials(
     let user_credentials = model::AuthRequest::from(json);
     let db = state.db.lock().unwrap();
     match authorization::authorize(user_credentials, db).await {
-        Ok(potential_token) => match potential_token {
-            Some(auth_token) => HttpResponse::Ok()
-                .header(
-                    http::header::AUTHORIZATION,
-                    format!("Bearer {}", auth_token),
-                )
-                .finish(),
-            None => HttpResponse::NotFound().finish(),
+        Ok(stored_credentials) => match stored_credentials {
+            Some(credentials) => match jwt::set_auth_header(HttpResponse::Ok(), credentials) {
+                Ok(authenticated_response) => authenticated_response,
+                Err(_) => HttpResponse::InternalServerError().finish(),
+            },
+            None => return HttpResponse::NotFound().finish(),
         },
-        Err(error) => match error {
-            Error::Unauthorized(_) => HttpResponse::Unauthorized(),
-            _ => HttpResponse::InternalServerError(),
+        Err(error) => {
+            return match error {
+                Error::Unauthorized(_) => HttpResponse::Unauthorized(),
+                _ => HttpResponse::InternalServerError(),
+            }
+            .finish()
         }
-        .finish(),
     }
 }
 
@@ -29,7 +32,7 @@ pub async fn authenticate_credentials(
 mod auth_tests {
     use super::*;
     use crate::{authentication::password, model, utilities::test as test_helper};
-    use actix_web::{test, FromRequest};
+    use actix_web::{http, test, FromRequest};
 
     #[actix_rt::test]
     async fn authenticate_credentials_success_status() {
