@@ -5,20 +5,20 @@ type CredentialResults = Result<Option<model::Credentials>, Error>;
 const GET_CREDENTIALS_BY_NAME: &str =
     "SELECT id, email, name, hash FROM auth.credentials WHERE name = $1";
 const GET_CREDENTIALS_BY_EMAIL: &str =
-    "SELECT id, email, name, hash FROM auth.credentials WHERE name = $1";
+    "SELECT id, email, name, hash FROM auth.credentials WHERE email = $1";
 const SAVE_CREDENTIALS: &str =
     "INSERT INTO auth.credentials(name, email, hash) VALUES ($1, $2, $3)";
 const CHECK_EXISTING_CREDENTIALS: &str =
-    "SELECT id, email, name, hash, deleted_at FROM auth.credentials WHERE name = $1 OR email = $2";
+    "SELECT deleted_at FROM auth.credentials WHERE name = $1 OR email = $2";
 const UPDATE_EXISTING_RECORD: &str =
-    "UPDATE auth.credentials(name, password, updated_at, deleted_at) VALUES ($1, $2, CURRENT_TIMESTAMP, null) WHERE email = $3";
+    "UPDATE auth.credentials(id, name, password, updated_at, deleted_at) VALUES ($1, $2, CURRENT_TIMESTAMP, null) WHERE email = $3";
 
 pub struct Credentials<'a> {
     client: database::Client<'a>,
 }
 
 pub enum Status {
-    Deleted(model::Credentials),
+    Deleted,
     Exists,
     None,
 }
@@ -40,7 +40,7 @@ impl<'a> Credentials<'a> {
         self.get_by_single_param(GET_CREDENTIALS_BY_EMAIL, email)
             .await
     }
-    pub async fn credential_status(
+    pub async fn get_status(
         &mut self,
         credentials: &model::CredentialRequest,
     ) -> Result<Status, Error> {
@@ -48,18 +48,8 @@ impl<'a> Credentials<'a> {
         let stmt = self.client.prepare(CHECK_EXISTING_CREDENTIALS).await?;
         let results = self.client.query(&stmt, &[&name, &email]).await?;
         Ok(match results.first() {
-            Some(row) => match row.get::<usize, Option<String>>(5) {
-                Some(_) => {
-                    if let Some(credentials) = model::Credentials::from(results) {
-                        if &credentials.email == email {
-                            return Ok(Status::Deleted(credentials));
-                        }
-                        return Ok(Status::Exists);
-                    };
-                    return Err(Error::DatabaseError(database::Error::Error(String::from(
-                        "Could not parse credentials from database while retrieving status",
-                    ))));
-                }
+            Some(row) => match row.get::<usize, Option<database::Timestamp>>(0) {
+                Some(_) => Status::Deleted,
                 None => Status::Exists,
             },
             None => Status::None,

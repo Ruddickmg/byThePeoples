@@ -1,5 +1,6 @@
 use bb8;
 use bb8_postgres;
+use chrono;
 use std::fmt::Formatter;
 use std::{fmt::Display, io};
 use tokio_postgres;
@@ -9,6 +10,7 @@ mod configuration;
 mod connection_pool;
 mod transaction;
 
+pub type Timestamp = chrono::NaiveDateTime;
 pub type Statement = tokio_postgres::Statement;
 pub type Results = Vec<tokio_postgres::Row>;
 pub type Params<'a> = &'a [&'a (dyn tokio_postgres::types::ToSql + Sync)];

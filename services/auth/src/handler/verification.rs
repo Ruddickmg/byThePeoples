@@ -12,19 +12,16 @@ pub async fn authenticate_credentials(
     let db = state.db.lock().unwrap();
     match authorization::authorize(user_credentials, db).await {
         Ok(stored_credentials) => match stored_credentials {
-            Some(credentials) => match jwt::set_auth_header(HttpResponse::Ok(), credentials) {
-                Ok(authenticated_response) => authenticated_response,
-                Err(_) => HttpResponse::InternalServerError().finish(),
-            },
-            None => return HttpResponse::NotFound().finish(),
-        },
-        Err(error) => {
-            return match error {
-                Error::Unauthorized(_) => HttpResponse::Unauthorized(),
-                _ => HttpResponse::InternalServerError(),
+            authorization::Results::Valid(credentials) => {
+                match jwt::set_auth_header(HttpResponse::Ok(), credentials) {
+                    Ok(authenticated_response) => authenticated_response,
+                    Err(_) => HttpResponse::InternalServerError().finish(),
+                }
             }
-            .finish()
-        }
+            authorization::Results::Invalid => HttpResponse::Unauthorized().finish(),
+            authorization::Results::None => return HttpResponse::NotFound().finish(),
+        },
+        Err(error) => HttpResponse::InternalServerError().finish(),
     }
 }
 
@@ -45,7 +42,11 @@ mod auth_tests {
             password: String::from(&password),
         };
         helper
-            .add_credentials(&[&name, &hashed_password, &email])
+            .add_credentials(model::CredentialRequest {
+                name: String::from(&name),
+                password: String::from(&hashed_password),
+                email: String::from(&email),
+            })
             .await;
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
@@ -69,7 +70,11 @@ mod auth_tests {
             password: String::from(&password),
         };
         helper
-            .add_credentials(&[&name, &hashed_password, &email])
+            .add_credentials(model::CredentialRequest {
+                name: String::from(&name),
+                password: String::from(&hashed_password),
+                email: String::from(&email),
+            })
             .await;
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
@@ -108,7 +113,11 @@ mod auth_tests {
         let (name, email, password) = helper.fake_credentials();
         let hashed_password = password::hash_password(&password).unwrap();
         helper
-            .add_credentials(&[&name, &email, &hashed_password])
+            .add_credentials(model::CredentialRequest {
+                name: String::from(&name),
+                password: String::from(&hashed_password),
+                email: String::from(&email),
+            })
             .await;
         let request_data = model::AuthRequest {
             name: String::from(&name),
