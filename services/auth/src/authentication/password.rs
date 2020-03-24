@@ -2,6 +2,28 @@ extern crate argonautica;
 
 use crate::{configuration::hash, Error};
 use argonautica::{Hasher, Verifier};
+use std::fmt;
+
+#[derive(Ord, PartialOrd, Eq, PartialEq)]
+pub enum PasswordStrength {
+    Strong = 3,
+    Moderate = 2,
+    Weak = 1,
+}
+
+impl fmt::Display for PasswordStrength {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                PasswordStrength::Strong => "Strong",
+                PasswordStrength::Moderate => "Moderate",
+                PasswordStrength::Weak => "Weak",
+            }
+        )
+    }
+}
 
 pub fn hash_password(password: &str) -> Result<String, Error> {
     let mut hasher = Hasher::default();
@@ -18,6 +40,13 @@ pub fn authenticate(password: &str, hash: &str) -> Result<bool, Error> {
         .with_password(password)
         .with_secret_key(hash::secret())
         .verify()?)
+}
+
+pub fn strength(password: &str) -> PasswordStrength {
+    if password == "password" {
+        return PasswordStrength::Weak;
+    }
+    PasswordStrength::Strong
 }
 
 // ---

@@ -1,4 +1,4 @@
-use crate::{model, Error};
+use crate::{model, repository, Error};
 use fake::faker::name::en as name;
 use fake::Fake;
 
@@ -18,14 +18,30 @@ impl Helper {
         let password = name::LastName().fake();
         (name, email, password)
     }
-    pub async fn add_credentials(&self, params: database::Params<'_>) {
+    pub async fn get_credentials_by_name(
+        &self,
+        name: &str,
+    ) -> Result<Option<model::Credentials>, Error> {
+        let db = self.state.db.lock().unwrap();
+        let client = db.client().await?;
+        let mut credentials = repository::Credentials::new(client);
+        Ok(credentials.by_name(&name).await?)
+    }
+    pub async fn add_credentials(
+        &self,
+        model::CredentialRequest {
+            name,
+            email,
+            password,
+        }: model::CredentialRequest,
+    ) {
         let query =
             String::from("INSERT INTO auth.credentials(name, hash, email) VALUES ($1, $2, $3)");
         let db = self.state.db.lock().unwrap();
         db.client()
             .await
             .unwrap()
-            .execute(&query, params)
+            .execute(&query, &[&name, &password, &email])
             .await
             .unwrap();
     }
