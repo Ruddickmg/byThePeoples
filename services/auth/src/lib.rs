@@ -1,7 +1,7 @@
 use serde::export::Formatter;
 
-pub mod authentication;
 mod configuration;
+pub mod controller;
 mod handler;
 pub mod model;
 mod repository;

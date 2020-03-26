@@ -1,4 +1,4 @@
-use crate::{authentication::password, model, repository, Error};
+use crate::{controller::password, model, repository, Error};
 use std::sync;
 
 pub enum Results {

@@ -38,7 +38,7 @@ pub fn generate_token(credentials: Credentials) -> Result<String, Error> {
     }
 }
 
-pub fn set_auth_header(
+pub fn set_token(
     mut response: dev::HttpResponseBuilder,
     credentials: model::Credentials,
 ) -> Result<web::HttpResponse, Error> {

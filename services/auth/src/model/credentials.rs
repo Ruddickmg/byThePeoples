@@ -21,3 +21,23 @@ impl Credentials {
         }
     }
 }
+
+use actix_web::web;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Request {
+    pub email: String,
+    pub name: String,
+    pub password: String,
+}
+
+impl From<web::Json<Request>> for Request {
+    fn from(json: web::Json<Request>) -> Request {
+        Request {
+            email: String::from(&json.email),
+            name: String::from(&json.name),
+            password: String::from(&json.password),
+        }
+    }
+}

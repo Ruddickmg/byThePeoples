@@ -52,7 +52,7 @@ export const baseConfig: Configuration = {
         test: /\.(png|jpg|gif|svg)$/,
         loader: 'file-loader',
         options: {
-          name: '[name].[ext]?[authentication]'
+          name: '[name].[ext]?[controller]'
         }
       },
       {
