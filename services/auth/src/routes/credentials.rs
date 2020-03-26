@@ -6,6 +6,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("")
             .app_data(web::Json::<model::AuthRequest>)
-            .route(web::post().to(credentials::save_credentials)),
+            .route(web::post().to(credentials::create))
+            .route(web::delete().to(credentials::delete)),
     );
 }

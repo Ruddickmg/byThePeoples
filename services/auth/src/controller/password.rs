@@ -5,21 +5,21 @@ use argonautica::{Hasher, Verifier};
 use std::fmt;
 
 #[derive(Ord, PartialOrd, Eq, PartialEq)]
-pub enum PasswordStrength {
+pub enum Strength {
     Strong = 3,
     Moderate = 2,
     Weak = 1,
 }
 
-impl fmt::Display for PasswordStrength {
+impl fmt::Display for Strength {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{}",
             match self {
-                PasswordStrength::Strong => "Strong",
-                PasswordStrength::Moderate => "Moderate",
-                PasswordStrength::Weak => "Weak",
+                Strength::Strong => "Strong",
+                Strength::Moderate => "Moderate",
+                Strength::Weak => "Weak",
             }
         )
     }
@@ -42,11 +42,11 @@ pub fn authenticate(password: &str, hash: &str) -> Result<bool, Error> {
         .verify()?)
 }
 
-pub fn strength(password: &str) -> PasswordStrength {
+pub fn strength(password: &str) -> Strength {
     if password == "password" {
-        return PasswordStrength::Weak;
+        return Strength::Weak;
     }
-    PasswordStrength::Strong
+    Strength::Strong
 }
 
 // ---

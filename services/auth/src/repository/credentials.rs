@@ -12,6 +12,8 @@ const CHECK_EXISTING_CREDENTIALS: &str =
     "SELECT deleted_at FROM auth.credentials WHERE name = $1 OR email = $2";
 const UPDATE_EXISTING_RECORD: &str =
     "UPDATE auth.credentials(id, name, password, updated_at, deleted_at) VALUES ($1, $2, CURRENT_TIMESTAMP, null) WHERE email = $3";
+const MARK_AS_DELETED_BY_EMAIL: &str =
+    "UPDATE auth.credentials(deleted_at) VALUES (current_timestamp) WHERE email = $1";
 
 pub struct Credentials<'a> {
     client: database::Client<'a>,
@@ -79,5 +81,10 @@ impl<'a> Credentials<'a> {
             .client
             .query(&stmt, &[&name, &email, &password])
             .await?)
+    }
+    pub async fn mark_as_deleted_by_email(&mut self, email: &str) -> Result<(), Error> {
+        let stmt = self.client.prepare(MARK_AS_DELETED_BY_EMAIL).await?;
+        self.client.query(&stmt, &[&email]).await?;
+        Ok(())
     }
 }

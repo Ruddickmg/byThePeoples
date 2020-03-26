@@ -1,5 +1,5 @@
 use crate::{
-    authentication::{authorization, jwt},
+    controller::{authorization, jwt},
     model, Error,
 };
 use actix_web::{web, HttpResponse};
@@ -13,7 +13,7 @@ pub async fn authenticate_credentials(
     match authorization::authorize(user_credentials, db).await {
         Ok(stored_credentials) => match stored_credentials {
             authorization::Results::Valid(credentials) => {
-                match jwt::set_auth_header(HttpResponse::Ok(), credentials) {
+                match jwt::set_token(HttpResponse::Ok(), credentials) {
                     Ok(authenticated_response) => authenticated_response,
                     Err(_) => HttpResponse::InternalServerError().finish(),
                 }
@@ -28,7 +28,7 @@ pub async fn authenticate_credentials(
 #[cfg(test)]
 mod auth_tests {
     use super::*;
-    use crate::{authentication::password, model, utilities::test as test_helper};
+    use crate::{controller::password, model, utilities::test as test_helper};
     use actix_web::{http, test, FromRequest};
 
     #[actix_rt::test]

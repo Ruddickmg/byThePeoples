@@ -1,64 +1,38 @@
 use crate::{
-    authentication::{jwt, password},
+    controller::{credentials, jwt, password},
     model, repository, Error,
 };
 use actix_web::{web, HttpResponse};
 use std::sync::MutexGuard;
 
-async fn handle_credential_saving(
-    db: MutexGuard<'_, model::Database>,
-    model::CredentialRequest {
-        name,
-        email,
-        password,
-    }: model::CredentialRequest,
-) -> Result<Option<model::Credentials>, Error> {
-    let client = db.client().await?;
-    let mut credentials = repository::Credentials::new(client);
-    let hash = password::hash_password(&password)?;
-    let encrypted_credentials = model::CredentialRequest {
-        name: String::from(&name),
-        email: String::from(&email),
-        password: String::from(&hash),
-    };
-    if let repository::credentials::Status::None =
-        credentials.get_status(&encrypted_credentials).await?
-    {
-        credentials.save_credentials(&encrypted_credentials).await?;
-        return Ok(credentials.by_name(&name).await?);
-    }
-    Ok(None)
-}
-
 pub async fn save_credentials(
     state: web::Data<model::ServiceState>,
     json: web::Json<model::CredentialRequest>,
 ) -> HttpResponse {
-    let credential = model::CredentialRequest::from(json);
-    if password::PasswordStrength::Weak < password::strength(&credential.password) {
-        let db = state.db.lock().unwrap();
-        if let Ok(result) = handle_credential_saving(db, credential).await {
-            match result {
-                Some(stored_credentials) => {
-                    if let Ok(response) =
-                        jwt::set_auth_header(HttpResponse::Created(), stored_credentials)
-                    {
-                        return response;
-                    }
+    let user_credentials = model::CredentialRequest::from(json);
+    let db = state.db.lock().unwrap();
+    if let Ok(result) = credentials::save(db, user_credentials).await {
+        match result {
+            credentials::SaveResults::Conflict => HttpResponse::Conflict().finish(),
+            credentials::SaveResults::WeakPassword => HttpResponse::Forbidden().finish(),
+            credentials::SaveResults::Saved(stored_credentials) => {
+                if let Ok(response) = jwt::set_token(HttpResponse::Created(), stored_credentials) {
+                    response
+                } else {
+                    HttpResponse::InternalServerError().finish()
                 }
-                None => return HttpResponse::Conflict().finish(),
             }
         }
-        return HttpResponse::InternalServerError().finish();
+    } else {
+        HttpResponse::InternalServerError().finish()
     }
-    HttpResponse::Forbidden().finish()
 }
 
 #[cfg(test)]
 mod credentials_handler_tests {
     use super::*;
     use super::*;
-    use crate::{authentication::password, model, utilities::test as test_helper};
+    use crate::{controller::password, model, utilities::test as test_helper};
     use actix_web::{http, test, FromRequest};
 
     #[actix_rt::test]
@@ -227,7 +201,7 @@ mod credentials_handler_tests {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let (name, email, ..) = helper.fake_credentials();
-        let mut request_data = model::CredentialRequest {
+        let request_data = model::CredentialRequest {
             name: String::from(&name),
             password: String::from("password"),
             email: String::from(&email),
