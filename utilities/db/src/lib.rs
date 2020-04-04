@@ -10,16 +10,17 @@ mod configuration;
 mod connection_pool;
 mod transaction;
 
+pub type Row = tokio_postgres::Row;
 pub type Timestamp = chrono::NaiveDateTime;
-pub type Statement = tokio_postgres::Statement;
-pub type Results = Vec<tokio_postgres::Row>;
+pub type Results = Vec<Row>;
 pub type Params<'a> = &'a [&'a (dyn tokio_postgres::types::ToSql + Sync)];
-pub type Transaction<'a> = transaction::GenericTransaction<'a>;
-pub type Client<'a> = client::GenericClient<'a>;
-pub type Configuration = configuration::Configuration;
-pub type Database = Box<dyn connection_pool::DatabaseTrait + Send + Sync>;
 
-pub use connection_pool::ConnectionPool;
+pub use chrono::NaiveDateTime as TimeStamp;
+pub use client::Client;
+pub use configuration::Configuration;
+pub use connection_pool::ConnectionPool as Database;
+pub use tokio_postgres::Statement;
+pub use transaction::Transaction;
 
 type Result<T> = std::result::Result<T, Error>;
 type Manager = bb8_postgres::PostgresConnectionManager<tokio_postgres::tls::NoTls>;

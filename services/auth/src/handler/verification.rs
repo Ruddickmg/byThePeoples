@@ -1,6 +1,6 @@
 use crate::{
     controller::{authorization, jwt},
-    model, Error,
+    model,
 };
 use actix_web::{web, HttpResponse};
 
@@ -9,8 +9,7 @@ pub async fn authenticate_credentials(
     json: web::Json<model::AuthRequest>,
 ) -> HttpResponse {
     let user_credentials = model::AuthRequest::from(json);
-    let db = state.db.lock().unwrap();
-    match authorization::authorize(user_credentials, db).await {
+    match authorization::authorize(user_credentials, &state.db).await {
         Ok(stored_credentials) => match stored_credentials {
             authorization::Results::Valid(credentials) => {
                 match jwt::set_token(HttpResponse::Ok(), credentials) {
@@ -21,14 +20,14 @@ pub async fn authenticate_credentials(
             authorization::Results::Invalid => HttpResponse::Unauthorized().finish(),
             authorization::Results::None => return HttpResponse::NotFound().finish(),
         },
-        Err(error) => HttpResponse::InternalServerError().finish(),
+        Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
 
 #[cfg(test)]
 mod auth_tests {
     use super::*;
-    use crate::{controller::password, model, utilities::test as test_helper};
+    use crate::{controller, model, utilities::test as test_helper};
     use actix_web::{http, test, FromRequest};
 
     #[actix_rt::test]
@@ -36,17 +35,14 @@ mod auth_tests {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let (name, email, password) = helper.fake_credentials();
-        let hashed_password = password::hash_password(&password).unwrap();
-        let request_data = model::AuthRequest {
-            name: String::from(&name),
-            password: String::from(&password),
-        };
+        let hashed_password = controller::password::hash_password(&password).unwrap();
+        let request_data = model::AuthRequest::new(&name, &password);
         helper
-            .add_credentials(model::CredentialRequest {
-                name: String::from(&name),
-                password: String::from(&hashed_password),
-                email: String::from(&email),
-            })
+            .add_credentials(&model::CredentialRequest::new(
+                &name,
+                &email,
+                &hashed_password,
+            ))
             .await;
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
@@ -64,17 +60,14 @@ mod auth_tests {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let (name, email, password) = helper.fake_credentials();
-        let hashed_password = password::hash_password(&password).unwrap();
-        let request_data = model::AuthRequest {
-            name: String::from(&name),
-            password: String::from(&password),
-        };
+        let hashed_password = controller::password::hash_password(&password).unwrap();
+        let request_data = model::AuthRequest::new(&name, &password);
         helper
-            .add_credentials(model::CredentialRequest {
-                name: String::from(&name),
-                password: String::from(&hashed_password),
-                email: String::from(&email),
-            })
+            .add_credentials(&model::CredentialRequest::new(
+                &name,
+                &email,
+                &hashed_password,
+            ))
             .await;
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
@@ -92,10 +85,7 @@ mod auth_tests {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let (name, _email, password) = helper.fake_credentials();
-        let request_data = model::AuthRequest {
-            name: String::from(&name),
-            password: String::from(&password),
-        };
+        let request_data = model::AuthRequest::new(&name, &password);
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
@@ -111,18 +101,10 @@ mod auth_tests {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let (name, email, password) = helper.fake_credentials();
-        let hashed_password = password::hash_password(&password).unwrap();
-        helper
-            .add_credentials(model::CredentialRequest {
-                name: String::from(&name),
-                password: String::from(&hashed_password),
-                email: String::from(&email),
-            })
-            .await;
-        let request_data = model::AuthRequest {
-            name: String::from(&name),
-            password: String::from("Incorrect password"),
-        };
+        let hashed_password = controller::password::hash_password(&password).unwrap();
+        let data = model::CredentialRequest::new(&name, &hashed_password, &email);
+        helper.add_credentials(&data).await;
+        let request_data = model::AuthRequest::new(&name, "invalid password");
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();

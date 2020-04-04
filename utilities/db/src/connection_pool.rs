@@ -1,5 +1,4 @@
 use crate::{client, configuration, Client, Configuration, Database, Pool, Result};
-use async_trait::async_trait;
 use std::fs;
 
 const SQL_EXTENSION: &str = "sql";
@@ -7,12 +6,6 @@ const SQL_EXTENSION: &str = "sql";
 #[derive(Clone)]
 pub struct ConnectionPool {
     pool: Pool,
-}
-
-#[async_trait]
-pub trait DatabaseTrait {
-    async fn client(&self) -> Result<Client<'_>>;
-    async fn migrate(&self, path: &str) -> Result<()>;
 }
 
 impl ConnectionPool {
@@ -26,7 +19,7 @@ impl ConnectionPool {
         if !environment::in_production() {
             println!("Connected to database.");
         }
-        Ok(Box::new(ConnectionPool { pool }))
+        Ok(ConnectionPool { pool })
     }
     pub async fn client(&self) -> Result<Client<'_>> {
         Ok(client::Client::new(self.pool.get().await?))
@@ -41,15 +34,5 @@ impl ConnectionPool {
             client.batch(&sql).await?;
         }
         Ok(())
-    }
-}
-
-#[async_trait]
-impl DatabaseTrait for ConnectionPool {
-    async fn client(&self) -> Result<Client<'_>> {
-        self.client().await
-    }
-    async fn migrate(&self, path: &str) -> Result<()> {
-        self.migrate(path).await
     }
 }

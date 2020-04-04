@@ -1,5 +1,4 @@
 use crate::{controller::password, model, repository, Error};
-use std::sync::MutexGuard;
 
 pub enum SaveResults {
     WeakPassword,
@@ -8,7 +7,7 @@ pub enum SaveResults {
 }
 
 pub async fn save(
-    db: MutexGuard<'_, model::Database>,
+    db: &model::Database,
     model::CredentialRequest {
         name,
         email,
@@ -49,7 +48,7 @@ pub enum DeleteResults {
 }
 
 pub async fn delete(
-    db: MutexGuard<'_, model::Database>,
+    db: &model::Database,
     model::CredentialRequest {
         password, email, ..
     }: model::CredentialRequest,
