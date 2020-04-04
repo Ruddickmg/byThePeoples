@@ -1,6 +1,6 @@
 extern crate argonautica;
 
-use crate::{configuration::hash, Error};
+use crate::{configuration::hash, Error, InternalServerError};
 use argonautica::{Hasher, Verifier};
 use std::fmt;
 
@@ -35,11 +35,20 @@ pub fn hash_password(password: &str) -> Result<String, Error> {
 
 pub fn authenticate(password: &str, hash: &str) -> Result<bool, Error> {
     let mut verifier = Verifier::default();
-    Ok(verifier
+    match verifier
         .with_hash(hash)
         .with_password(password)
         .with_secret_key(hash::secret())
-        .verify()?)
+        .verify()
+    {
+        Ok(result) => Ok(result),
+        Err(error) => match error.kind() {
+            argonautica::ErrorKind::HashDecodeError => Ok(false),
+            _ => Err(Error::InternalServerError(InternalServerError::Unknown(
+                format!("{:#?}", error),
+            ))),
+        },
+    }
 }
 
 pub fn strength(password: &str) -> Strength {

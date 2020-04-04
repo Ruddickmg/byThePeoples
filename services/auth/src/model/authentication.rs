@@ -7,6 +7,15 @@ pub struct Request {
     pub password: String,
 }
 
+impl Request {
+    pub fn new(name: &str, password: &str) -> Request {
+        Request {
+            name: String::from(name),
+            password: String::from(password),
+        }
+    }
+}
+
 impl From<web::Json<Request>> for Request {
     fn from(json: web::Json<Request>) -> Request {
         Request {

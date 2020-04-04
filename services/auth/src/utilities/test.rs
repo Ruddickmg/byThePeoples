@@ -22,7 +22,7 @@ impl Helper {
         &self,
         name: &str,
     ) -> Result<Option<model::Credentials>, Error> {
-        let db = self.state.db.lock().unwrap();
+        let db = &self.state.db;
         let client = db.client().await?;
         let mut credentials = repository::Credentials::new(client);
         Ok(credentials.by_name(&name).await?)
@@ -33,11 +33,11 @@ impl Helper {
             name,
             email,
             password,
-        }: model::CredentialRequest,
+        }: &model::CredentialRequest,
     ) {
         let query =
             String::from("INSERT INTO auth.credentials(name, hash, email) VALUES ($1, $2, $3)");
-        let db = self.state.db.lock().unwrap();
+        let db = &self.state.db;
         db.client()
             .await
             .unwrap()
@@ -46,7 +46,7 @@ impl Helper {
             .unwrap();
     }
     pub async fn delete_credentials_by_name(&self, name: &str) {
-        let db = self.state.db.lock().unwrap();
+        let db = &self.state.db;
         db.client()
             .await
             .unwrap()

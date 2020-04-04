@@ -1,17 +1,15 @@
 use crate::{
-    controller::{credentials, jwt, password},
-    model, repository, Error,
+    controller::{credentials, jwt},
+    model,
 };
 use actix_web::{web, HttpResponse};
-use std::sync::MutexGuard;
 
 pub async fn save_credentials(
     state: web::Data<model::ServiceState>,
     json: web::Json<model::CredentialRequest>,
 ) -> HttpResponse {
     let user_credentials = model::CredentialRequest::from(json);
-    let db = state.db.lock().unwrap();
-    if let Ok(result) = credentials::save(db, user_credentials).await {
+    if let Ok(result) = credentials::save(&state.db, user_credentials).await {
         match result {
             credentials::SaveResults::Conflict => HttpResponse::Conflict().finish(),
             credentials::SaveResults::WeakPassword => HttpResponse::Forbidden().finish(),
@@ -31,20 +29,17 @@ pub async fn save_credentials(
 #[cfg(test)]
 mod credentials_handler_tests {
     use super::*;
-    use super::*;
-    use crate::{controller::password, model, utilities::test as test_helper};
+    use crate::{model, utilities::test as test_helper};
     use actix_web::{http, test, FromRequest};
+
+    const WEAK_PASSWORD: &str = "password";
 
     #[actix_rt::test]
     async fn save_credentials_success_status() {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let (name, email, password) = helper.fake_credentials();
-        let request_data = model::CredentialRequest {
-            name: String::from(&name),
-            password: String::from(&password),
-            email: String::from(&email),
-        };
+        let request_data = model::CredentialRequest::new(&name, &email, &password);
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
@@ -61,18 +56,14 @@ mod credentials_handler_tests {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let (name, email, password) = helper.fake_credentials();
-        let request_data = model::CredentialRequest {
-            name: String::from(&name),
-            password: String::from(&password),
-            email: String::from(&email),
-        };
+        let request_data = model::CredentialRequest::new(&name, &email, &password);
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
         let json = web::Json::<model::CredentialRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
-        let resp = save_credentials(request_state, json).await;
+        save_credentials(request_state, json).await;
         let saved_credentials = helper
             .get_credentials_by_name(&name)
             .await
@@ -88,11 +79,7 @@ mod credentials_handler_tests {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let (name, email, password) = helper.fake_credentials();
-        let request_data = model::CredentialRequest {
-            name: String::from(&name),
-            password: String::from(&password),
-            email: String::from(&email),
-        };
+        let request_data = model::CredentialRequest::new(&name, &email, &password);
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
@@ -109,12 +96,8 @@ mod credentials_handler_tests {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let (name, email, password) = helper.fake_credentials();
-        let mut request_data = model::CredentialRequest {
-            name: String::from(&name),
-            password: String::from(&password),
-            email: String::from(&email),
-        };
-        helper.add_credentials(request_data.clone()).await;
+        let mut request_data = model::CredentialRequest::new(&name, &email, &password);
+        helper.add_credentials(&request_data).await;
         request_data.name = String::from("different name");
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
@@ -132,12 +115,8 @@ mod credentials_handler_tests {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let (name, email, password) = helper.fake_credentials();
-        let mut request_data = model::CredentialRequest {
-            name: String::from(&name),
-            password: String::from(&password),
-            email: String::from(&email),
-        };
-        helper.add_credentials(request_data.clone()).await;
+        let mut request_data = model::CredentialRequest::new(&name, &email, &password);
+        helper.add_credentials(&request_data).await;
         request_data.name = String::from("different name");
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
@@ -155,12 +134,8 @@ mod credentials_handler_tests {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let (name, email, password) = helper.fake_credentials();
-        let mut request_data = model::CredentialRequest {
-            name: String::from(&name),
-            password: String::from(&password),
-            email: String::from(&email),
-        };
-        helper.add_credentials(request_data.clone()).await;
+        let mut request_data = model::CredentialRequest::new(&name, &email, &password);
+        helper.add_credentials(&request_data).await;
         request_data.email = String::from("different email");
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
@@ -178,12 +153,8 @@ mod credentials_handler_tests {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let (name, email, password) = helper.fake_credentials();
-        let mut request_data = model::CredentialRequest {
-            name: String::from(&name),
-            password: String::from(&password),
-            email: String::from(&email),
-        };
-        helper.add_credentials(request_data.clone()).await;
+        let mut request_data = model::CredentialRequest::new(&name, &email, &password);
+        helper.add_credentials(&request_data).await;
         request_data.email = String::from("different email");
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
@@ -201,11 +172,7 @@ mod credentials_handler_tests {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let (name, email, ..) = helper.fake_credentials();
-        let request_data = model::CredentialRequest {
-            name: String::from(&name),
-            password: String::from("password"),
-            email: String::from(&email),
-        };
+        let request_data = model::CredentialRequest::new(&name, &email, WEAK_PASSWORD);
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
@@ -221,11 +188,7 @@ mod credentials_handler_tests {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let (name, email, ..) = helper.fake_credentials();
-        let request_data = model::CredentialRequest {
-            name: String::from(&name),
-            password: String::from("password"),
-            email: String::from(&email),
-        };
+        let request_data = model::CredentialRequest::new(&name, &email, WEAK_PASSWORD);
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
