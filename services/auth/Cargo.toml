@@ -16,6 +16,7 @@ listenfd = "0.3"
 serde = "1.0.104"
 serde_json = "1.0.47"
 jsonwebtoken = "7.0.0-alpha.2"
+zxcvbn = "2.0.1"
 
 [dev-dependencies]
 fake = "2.2.0"

@@ -1,8 +1,11 @@
 use crate::{model, repository, Error};
 use actix_web::{test, web, FromRequest};
-use fake::faker::name::en as name;
+use fake::faker::{internet::en as internet, name::en as name};
 use fake::Fake;
 use serde::{Deserialize, Serialize};
+
+const MAX_FAKE_PASSWORD_LENGTH: usize = 20;
+const MIN_FAKE_PASSWORD_LENGTH: usize = 15;
 
 pub struct Helper {
     state: model::ServiceState,
@@ -11,7 +14,7 @@ pub struct Helper {
 pub fn fake_credentials() -> (String, String, String) {
     let name = name::Name().fake();
     let email = name::FirstName().fake();
-    let password = name::LastName().fake();
+    let password = internet::Password(MIN_FAKE_PASSWORD_LENGTH..MAX_FAKE_PASSWORD_LENGTH).fake();
     (name, email, password)
 }
 

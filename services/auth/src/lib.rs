@@ -28,6 +28,7 @@ pub enum Error {
     DatabaseError(database::Error),
     InternalServerError(InternalServerError),
     Unauthorized(argonautica::Error),
+    PasswordError(zxcvbn::ZxcvbnError),
     BadRequest(String),
 }
 
@@ -38,7 +39,14 @@ impl std::fmt::Display for Error {
             Error::InternalServerError(error) => write!(f, "{}", error),
             Error::Unauthorized(error) => write!(f, "{}", error),
             Error::BadRequest(message) => write!(f, "{}", message),
+            Error::PasswordError(error) => write!(f, "{}", error),
         }
+    }
+}
+
+impl From<zxcvbn::ZxcvbnError> for Error {
+    fn from(error: zxcvbn::ZxcvbnError) -> Error {
+        Error::PasswordError(error)
     }
 }
 

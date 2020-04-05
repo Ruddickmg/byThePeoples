@@ -1,7 +1,7 @@
 use crate::{controller::password, model, repository, Error};
 
 pub enum SaveResults {
-    WeakPassword,
+    WeakPassword(password::PasswordIssues),
     Conflict,
     Saved(model::Credentials),
 }
@@ -14,8 +14,9 @@ pub async fn create(
         password,
     }: model::FullRequest,
 ) -> Result<SaveResults, Error> {
-    if password::Strength::Weak >= password::strength(&password) {
-        Ok(SaveResults::WeakPassword)
+    let password_strength = password::strength(&name, &email, &password)?;
+    if let password::Strength::Weak(problems) = password_strength {
+        Ok(SaveResults::WeakPassword(problems))
     } else {
         let client = db.client().await?;
         let mut credentials = repository::Credentials::new(client);

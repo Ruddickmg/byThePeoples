@@ -12,7 +12,13 @@ pub async fn save_credentials(
     if let Ok(result) = credentials::create(&state.db, user_credentials).await {
         match result {
             credentials::SaveResults::Conflict => HttpResponse::Conflict().finish(),
-            credentials::SaveResults::WeakPassword => HttpResponse::Forbidden().finish(),
+            credentials::SaveResults::WeakPassword(problems) => {
+                if let Ok(json) = serde_json::to_string(&problems) {
+                    HttpResponse::Forbidden().json2(&json)
+                } else {
+                    HttpResponse::InternalServerError().finish()
+                }
+            }
             credentials::SaveResults::Saved(stored_credentials) => {
                 if let Ok(response) = jwt::set_token(HttpResponse::Created(), stored_credentials) {
                     response
@@ -31,6 +37,7 @@ mod credentials_handler_tests {
     use super::*;
     use crate::{model, utilities::test as test_helper};
     use actix_web::{http, test, FromRequest};
+    use std::intrinsics::prefetch_read_instruction;
 
     const WEAK_PASSWORD: &str = "password";
 
@@ -181,6 +188,8 @@ mod credentials_handler_tests {
         let resp = save_credentials(request_state, json).await;
         assert_eq!(resp.status(), status_codes::FORBIDDEN);
     }
+
+    // TODO test for weak password message body
 
     #[actix_rt::test]
     async fn does_not_set_auth_token_if_password_is_too_weak() {

@@ -239,8 +239,6 @@ mod update_credentials_test {
     #[actix_rt::test]
     async fn doest_not_set_auth_token_if_not_found() {
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
-        let helper = test_helper::Helper::new().await.unwrap();
         let (_name, email, password) = test_helper::fake_credentials();
         let auth_credentials = model::EmailRequest::new(&email, &password);
         let update_credentials = model::CredentialsRequest::new(&None, &None, &None);
