@@ -189,6 +189,8 @@ mod credentials_handler_tests {
         assert_eq!(resp.status(), status_codes::FORBIDDEN);
     }
 
+    // TODO test for weak password message body
+
     #[actix_rt::test]
     async fn does_not_set_auth_token_if_password_is_too_weak() {
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
