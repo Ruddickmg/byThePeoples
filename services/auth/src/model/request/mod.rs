@@ -8,10 +8,10 @@ mod update;
 
 use actix_web::web::Json;
 pub use credentials::CredentialsRequest;
-pub use email_auth::EmailRequest;
+pub use email_auth::*;
 pub use full_auth::FullRequest;
 pub use name_auth::NameRequest;
-pub use update::UpdateRequest;
+pub use update::*;
 
 pub enum AuthRequest {
     Full(FullRequest),

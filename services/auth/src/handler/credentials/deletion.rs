@@ -30,7 +30,6 @@ mod credential_deletion_test {
 
     #[actix_rt::test]
     async fn returns_not_found_if_no_record_exists() {
-        let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let (name, email, password) = test_helper::fake_credentials();
         let request_data = model::FullRequest::new(&name, &email, &password);

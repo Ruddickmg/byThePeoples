@@ -174,7 +174,6 @@ mod credentials_handler_tests {
 
     #[actix_rt::test]
     async fn returns_forbidden_if_password_is_too_weak() {
-        let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let (name, email, ..) = test_helper::fake_credentials();
         let request_data = model::FullRequest::new(&name, &email, WEAK_PASSWORD);
