@@ -6,13 +6,13 @@ pub enum SaveResults {
     Saved(model::Credentials),
 }
 
-pub async fn save(
+pub async fn create(
     db: &model::Database,
-    model::CredentialRequest {
+    model::FullRequest {
         name,
         email,
         password,
-    }: model::CredentialRequest,
+    }: model::FullRequest,
 ) -> Result<SaveResults, Error> {
     if password::Strength::Weak >= password::strength(&password) {
         Ok(SaveResults::WeakPassword)
@@ -20,7 +20,7 @@ pub async fn save(
         let client = db.client().await?;
         let mut credentials = repository::Credentials::new(client);
         let hash = password::hash_password(&password)?;
-        let encrypted_credentials = model::CredentialRequest {
+        let encrypted_credentials = model::FullRequest {
             name: String::from(&name),
             email: String::from(&email),
             password: String::from(&hash),
@@ -49,9 +49,7 @@ pub enum DeleteResults {
 
 pub async fn delete(
     db: &model::Database,
-    model::CredentialRequest {
-        password, email, ..
-    }: model::CredentialRequest,
+    model::EmailRequest { password, email }: model::EmailRequest,
 ) -> Result<DeleteResults, Error> {
     let client = db.client().await?;
     let mut credentials = repository::Credentials::new(client);
@@ -64,5 +62,48 @@ pub async fn delete(
         }
     } else {
         Ok(DeleteResults::NotFound)
+    }
+}
+
+pub enum UpdateResults {
+    Success(model::Credentials),
+    NotFound,
+    Unauthorized,
+}
+
+pub async fn update(
+    db: &model::Database,
+    auth_details: &model::EmailRequest,
+    credential_updates: &model::CredentialsRequest,
+) -> Result<UpdateResults, Error> {
+    let client = db.client().await?;
+    let mut credentials = repository::Credentials::new(client);
+    if let Some(stored_credentials) = credentials.by_email(&auth_details.email).await? {
+        if password::authenticate(&auth_details.password, &stored_credentials.hash)? {
+            let updated_credentials = credentials
+                .update_credentials(&model::Credentials {
+                    name: match &credential_updates.name {
+                        Some(name) => String::from(name),
+                        None => String::from(&stored_credentials.name),
+                    },
+                    email: match &credential_updates.email {
+                        Some(email) => String::from(email),
+                        None => String::from(&stored_credentials.name),
+                    },
+                    hash: match &credential_updates.password {
+                        Some(updated_password) => {
+                            String::from(password::hash_password(updated_password)?)
+                        }
+                        None => String::from(&stored_credentials.hash),
+                    },
+                    ..stored_credentials
+                })
+                .await?;
+            Ok(UpdateResults::Success(updated_credentials))
+        } else {
+            Ok(UpdateResults::Unauthorized)
+        }
+    } else {
+        Ok(UpdateResults::NotFound)
     }
 }

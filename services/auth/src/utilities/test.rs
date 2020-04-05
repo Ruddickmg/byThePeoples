@@ -6,17 +6,18 @@ pub struct Helper {
     state: model::ServiceState,
 }
 
+pub fn fake_credentials() -> (String, String, String) {
+    let name = name::Name().fake();
+    let email = name::FirstName().fake();
+    let password = name::LastName().fake();
+    (name, email, password)
+}
+
 impl Helper {
     pub async fn new() -> Result<Helper, Error> {
         Ok(Helper {
             state: model::ServiceState::new().await?,
         })
-    }
-    pub fn fake_credentials(&self) -> (String, String, String) {
-        let name = name::Name().fake();
-        let email = name::FirstName().fake();
-        let password = name::LastName().fake();
-        (name, email, password)
     }
     pub async fn get_credentials_by_name(
         &self,
@@ -29,11 +30,11 @@ impl Helper {
     }
     pub async fn add_credentials(
         &self,
-        model::CredentialRequest {
+        model::FullRequest {
             name,
             email,
             password,
-        }: &model::CredentialRequest,
+        }: &model::FullRequest,
     ) {
         let query =
             String::from("INSERT INTO auth.credentials(name, hash, email) VALUES ($1, $2, $3)");

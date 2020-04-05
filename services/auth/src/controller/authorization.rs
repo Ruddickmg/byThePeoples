@@ -7,7 +7,7 @@ pub enum Results {
 }
 
 pub async fn authorize(
-    user_credentials: model::AuthRequest,
+    user_credentials: &model::NameRequest,
     db: &model::Database,
 ) -> Result<Results, Error> {
     let client = db.client().await?;

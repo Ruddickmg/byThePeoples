@@ -36,11 +36,8 @@ impl<'a> Credentials<'a> {
         self.get_by_single_param(credentials::query::EMAIL, email)
             .await
     }
-    pub async fn get_status(
-        &mut self,
-        credentials: &model::CredentialRequest,
-    ) -> Result<Status, Error> {
-        let model::CredentialRequest { name, email, .. } = credentials;
+    pub async fn get_status(&mut self, credentials: &model::FullRequest) -> Result<Status, Error> {
+        let model::FullRequest { name, email, .. } = credentials;
         let stmt = self.client.prepare(credentials::query::DELETED_AT).await?;
         let stored_credentials = self
             .client
@@ -55,24 +52,29 @@ impl<'a> Credentials<'a> {
             })
         }
     }
-    // pub async fn update_credentials(
-    //     &self,
-    //     credentials: &model::Credentials,
-    // ) -> Result<Vec<credentials::AffectedRows>, Error> {
-    //     let model::Credentials {
-    //         name, email, hash, ..
-    //     } = credentials;
-    //     let stmt = self.client.prepare(credentials::query::UPDATE).await?;
-    //     Ok(self
-    //         .client
-    //         .query::<credentials::AffectedRows>(&stmt, &[&name, &hash, &email])
-    //         .await?)
-    // }
+    pub async fn update_credentials(
+        &self,
+        credentials: &model::Credentials,
+    ) -> Result<model::Credentials, Error> {
+        let model::Credentials {
+            name,
+            email,
+            hash,
+            id,
+            ..
+        } = credentials;
+        let stmt = self.client.prepare(credentials::query::UPDATE).await?;
+        Ok(self
+            .client
+            .query::<model::Credentials>(&stmt, &[&name, &hash, &email, &id])
+            .await?
+            .remove(0))
+    }
     pub async fn save_credentials(
         &mut self,
-        credentials: &model::CredentialRequest,
+        credentials: &model::FullRequest,
     ) -> Result<Vec<credentials::AffectedRows>, Error> {
-        let model::CredentialRequest {
+        let model::FullRequest {
             name,
             email,
             password,
