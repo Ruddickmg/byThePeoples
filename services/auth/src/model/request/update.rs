@@ -1,5 +1,4 @@
 use crate::model;
-use actix_web::error::DispatchError::Upgrade;
 use actix_web::web;
 use serde::{Deserialize, Serialize};
 

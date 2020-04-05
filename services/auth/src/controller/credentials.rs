@@ -88,7 +88,7 @@ pub async fn update(
                     },
                     email: match &credential_updates.email {
                         Some(email) => String::from(email),
-                        None => String::from(&stored_credentials.name),
+                        None => String::from(&stored_credentials.email),
                     },
                     hash: match &credential_updates.password {
                         Some(updated_password) => {
