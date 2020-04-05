@@ -28,6 +28,7 @@ pub enum Error {
     DatabaseError(database::Error),
     InternalServerError(InternalServerError),
     Unauthorized(argonautica::Error),
+    BadRequest(String),
 }
 
 impl std::fmt::Display for Error {
@@ -36,6 +37,7 @@ impl std::fmt::Display for Error {
             Error::DatabaseError(error) => write!(f, "{}", error),
             Error::InternalServerError(error) => write!(f, "{}", error),
             Error::Unauthorized(error) => write!(f, "{}", error),
+            Error::BadRequest(message) => write!(f, "{}", message),
         }
     }
 }

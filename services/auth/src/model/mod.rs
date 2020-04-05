@@ -1,13 +1,12 @@
 use crate::{configuration::database as config, Error};
 use std::env;
 
-mod authentication;
-pub mod credentials;
+pub(crate) mod credentials;
+mod request;
 
-pub use authentication::Request as AuthRequest;
-pub use credentials::Credentials;
-pub use credentials::Request as CredentialRequest;
+pub use credentials::*;
 pub use database::Database;
+pub use request::*;
 
 pub struct ServiceState {
     pub db: Database,

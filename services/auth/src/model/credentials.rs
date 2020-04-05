@@ -1,6 +1,3 @@
-use actix_web::web;
-use serde::{Deserialize, Serialize};
-
 pub type CredentialId = i32;
 
 pub mod query {
@@ -9,31 +6,9 @@ pub mod query {
     pub const SAVE: &str = "INSERT INTO auth.credentials(name, email, hash) VALUES ($1, $2, $3)";
     pub const DELETED_AT: &str =
         "SELECT deleted_at FROM auth.credentials WHERE name = $1 OR email = $2";
-    pub const UPDATE_NAME: &str = "UPDATE auth.credentials SET name = $1, updated_at = CURRENT_TIMESTAMP, deleted_at = null WHERE email = $2";
+    pub const UPDATE: &str = "UPDATE auth.credentials SET name = $1, hash = $2, email = $3, updated_at = CURRENT_TIMESTAMP, deleted_at = null WHERE id = $4 RETURNING id, email, name, hash, created_at, updated_at, deleted_at";
     pub const DELETE_BY_EMAIL: &str =
         "UPDATE auth.credentials SET deleted_at = CURRENT_TIMESTAMP WHERE email = $1";
-}
-
-pub struct DeletedAt {
-    deleted_at: Option<database::TimeStamp>,
-}
-
-impl From<database::Row> for DeletedAt {
-    fn from(row: database::Row) -> Self {
-        DeletedAt {
-            deleted_at: row.get(0),
-        }
-    }
-}
-
-pub struct AffectedRows {
-    count: Option<i32>,
-}
-
-impl From<database::Row> for AffectedRows {
-    fn from(row: database::Row) -> Self {
-        AffectedRows { count: row.get(0) }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -61,29 +36,24 @@ impl From<database::Row> for Credentials {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Request {
-    pub email: String,
-    pub name: String,
-    pub password: String,
+pub struct DeletedAt {
+    deleted_at: Option<database::TimeStamp>,
 }
 
-impl Request {
-    pub fn new(name: &str, email: &str, password: &str) -> Request {
-        Request {
-            name: String::from(name),
-            email: String::from(email),
-            password: String::from(password),
+impl From<database::Row> for DeletedAt {
+    fn from(row: database::Row) -> Self {
+        DeletedAt {
+            deleted_at: row.get(0),
         }
     }
 }
 
-impl From<web::Json<Request>> for Request {
-    fn from(json: web::Json<Request>) -> Request {
-        Request {
-            email: String::from(&json.email),
-            name: String::from(&json.name),
-            password: String::from(&json.password),
-        }
+pub struct AffectedRows {
+    count: Option<i32>,
+}
+
+impl From<database::Row> for AffectedRows {
+    fn from(row: database::Row) -> Self {
+        AffectedRows { count: row.get(0) }
     }
 }

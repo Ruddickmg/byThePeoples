@@ -6,10 +6,10 @@ use actix_web::{web, HttpResponse};
 
 pub async fn save_credentials(
     state: web::Data<model::ServiceState>,
-    json: web::Json<model::CredentialRequest>,
+    json: web::Json<model::FullRequest>,
 ) -> HttpResponse {
-    let user_credentials = model::CredentialRequest::from(json);
-    if let Ok(result) = credentials::save(&state.db, user_credentials).await {
+    let user_credentials = model::FullRequest::from(json);
+    if let Ok(result) = credentials::create(&state.db, user_credentials).await {
         match result {
             credentials::SaveResults::Conflict => HttpResponse::Conflict().finish(),
             credentials::SaveResults::WeakPassword => HttpResponse::Forbidden().finish(),
@@ -38,12 +38,12 @@ mod credentials_handler_tests {
     async fn save_credentials_success_status() {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
-        let (name, email, password) = helper.fake_credentials();
-        let request_data = model::CredentialRequest::new(&name, &email, &password);
+        let (name, email, password) = test_helper::fake_credentials();
+        let request_data = model::FullRequest::new(&name, &email, &password);
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = save_credentials(request_state, json).await;
@@ -55,12 +55,12 @@ mod credentials_handler_tests {
     async fn save_credentials_creates_record() {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
-        let (name, email, password) = helper.fake_credentials();
-        let request_data = model::CredentialRequest::new(&name, &email, &password);
+        let (name, email, password) = test_helper::fake_credentials();
+        let request_data = model::FullRequest::new(&name, &email, &password);
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         save_credentials(request_state, json).await;
@@ -78,12 +78,12 @@ mod credentials_handler_tests {
     async fn save_credentials_sets_auth_token() {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
-        let (name, email, password) = helper.fake_credentials();
-        let request_data = model::CredentialRequest::new(&name, &email, &password);
+        let (name, email, password) = test_helper::fake_credentials();
+        let request_data = model::FullRequest::new(&name, &email, &password);
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = save_credentials(request_state, json).await;
@@ -95,14 +95,14 @@ mod credentials_handler_tests {
     async fn returns_conflict_if_email_exists() {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
-        let (name, email, password) = helper.fake_credentials();
-        let mut request_data = model::CredentialRequest::new(&name, &email, &password);
+        let (name, email, password) = test_helper::fake_credentials();
+        let mut request_data = model::FullRequest::new(&name, &email, &password);
         helper.add_credentials(&request_data).await;
         request_data.name = String::from("different name");
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = save_credentials(request_state, json).await;
@@ -114,14 +114,14 @@ mod credentials_handler_tests {
     async fn does_not_set_auth_token_if_email_exists() {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
-        let (name, email, password) = helper.fake_credentials();
-        let mut request_data = model::CredentialRequest::new(&name, &email, &password);
+        let (name, email, password) = test_helper::fake_credentials();
+        let mut request_data = model::FullRequest::new(&name, &email, &password);
         helper.add_credentials(&request_data).await;
         request_data.name = String::from("different name");
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = save_credentials(request_state, json).await;
@@ -133,14 +133,14 @@ mod credentials_handler_tests {
     async fn returns_conflict_if_name_exists() {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
-        let (name, email, password) = helper.fake_credentials();
-        let mut request_data = model::CredentialRequest::new(&name, &email, &password);
+        let (name, email, password) = test_helper::fake_credentials();
+        let mut request_data = model::FullRequest::new(&name, &email, &password);
         helper.add_credentials(&request_data).await;
         request_data.email = String::from("different email");
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = save_credentials(request_state, json).await;
@@ -152,14 +152,14 @@ mod credentials_handler_tests {
     async fn does_not_set_auth_token_if_name_exists() {
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
-        let (name, email, password) = helper.fake_credentials();
-        let mut request_data = model::CredentialRequest::new(&name, &email, &password);
+        let (name, email, password) = test_helper::fake_credentials();
+        let mut request_data = model::FullRequest::new(&name, &email, &password);
         helper.add_credentials(&request_data).await;
         request_data.email = String::from("different email");
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = save_credentials(request_state, json).await;
@@ -169,14 +169,13 @@ mod credentials_handler_tests {
 
     #[actix_rt::test]
     async fn returns_forbidden_if_password_is_too_weak() {
-        let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
-        let (name, email, ..) = helper.fake_credentials();
-        let request_data = model::CredentialRequest::new(&name, &email, WEAK_PASSWORD);
+        let (name, email, ..) = test_helper::fake_credentials();
+        let request_data = model::FullRequest::new(&name, &email, WEAK_PASSWORD);
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = save_credentials(request_state, json).await;
@@ -185,14 +184,13 @@ mod credentials_handler_tests {
 
     #[actix_rt::test]
     async fn does_not_set_auth_token_if_password_is_too_weak() {
-        let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
-        let (name, email, ..) = helper.fake_credentials();
-        let request_data = model::CredentialRequest::new(&name, &email, WEAK_PASSWORD);
+        let (name, email, ..) = test_helper::fake_credentials();
+        let request_data = model::FullRequest::new(&name, &email, WEAK_PASSWORD);
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = save_credentials(request_state, json).await;
