@@ -2,13 +2,14 @@ extern crate argonautica;
 
 use crate::{configuration::hash, Error, InternalServerError};
 use argonautica::{Hasher, Verifier};
+use serde::{Deserialize, Serialize};
 use std::fmt;
+use zxcvbn;
 
-#[derive(Ord, PartialOrd, Eq, PartialEq)]
 pub enum Strength {
-    Strong = 3,
-    Moderate = 2,
-    Weak = 1,
+    Strong,
+    Moderate,
+    Weak(PasswordIssues),
 }
 
 impl fmt::Display for Strength {
@@ -17,9 +18,9 @@ impl fmt::Display for Strength {
             f,
             "{}",
             match self {
-                Strength::Strong => "Strong",
-                Strength::Moderate => "Moderate",
-                Strength::Weak => "Weak",
+                Strength::Strong => "Password strength is strong",
+                Strength::Moderate => "Password strength is moderate",
+                Strength::Weak(_) => "Password strength is weak",
             }
         )
     }
@@ -51,11 +52,39 @@ pub fn authenticate(password: &str, hash: &str) -> Result<bool, Error> {
     }
 }
 
-pub fn strength(password: &str) -> Strength {
-    if password == "password" {
-        return Strength::Weak;
-    }
-    Strength::Strong
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct PasswordIssues {
+    message: String,
+    warning: Option<String>,
+    suggestions: Vec<String>,
+}
+const WEAK_PASSWORD_MESSAGE: &str = "Password is not strong enough";
+
+pub fn strength(name: &str, email: &str, password: &str) -> Result<Strength, Error> {
+    let result = zxcvbn::zxcvbn(&password, &[&name, &email])?;
+    Ok(match result.score() {
+        0..=2 => Strength::Weak(match result.feedback() {
+            Some(message) => PasswordIssues {
+                message: String::from(WEAK_PASSWORD_MESSAGE),
+                warning: match message.warning() {
+                    Some(warning) => Some(warning.to_string()),
+                    None => None,
+                },
+                suggestions: message
+                    .suggestions()
+                    .iter()
+                    .map(|suggestion| suggestion.to_string())
+                    .collect(),
+            },
+            None => PasswordIssues {
+                message: String::from(WEAK_PASSWORD_MESSAGE),
+                warning: None,
+                suggestions: vec![],
+            },
+        }),
+        3 => Strength::Moderate,
+        _ => Strength::Strong,
+    })
 }
 
 // ---

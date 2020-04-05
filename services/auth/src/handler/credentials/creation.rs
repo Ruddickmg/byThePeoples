@@ -12,7 +12,13 @@ pub async fn save_credentials(
     if let Ok(result) = credentials::create(&state.db, user_credentials).await {
         match result {
             credentials::SaveResults::Conflict => HttpResponse::Conflict().finish(),
-            credentials::SaveResults::WeakPassword => HttpResponse::Forbidden().finish(),
+            credentials::SaveResults::WeakPassword(problems) => {
+                if let Ok(json) = serde_json::to_string(&problems) {
+                    HttpResponse::Forbidden().json2(&json)
+                } else {
+                    HttpResponse::InternalServerError().finish()
+                }
+            }
             credentials::SaveResults::Saved(stored_credentials) => {
                 if let Ok(response) = jwt::set_token(HttpResponse::Created(), stored_credentials) {
                     response
@@ -36,6 +42,8 @@ mod credentials_handler_tests {
 
     #[actix_rt::test]
     async fn save_credentials_success_status() {
+        let thing = "$argon2id$v=19$m=4096,t=192,p=4$PpX1v6R57W146e2wrqYo2NyLJbVTnGsOwEK34sKr+EA$Mgrj603c0GzwlncJbgVa+tlPP6BJ3Cj+xAdc1OH2ckE";
+        println!("length of hash: {}", thing.len());
         let helper = test_helper::Helper::new().await.unwrap();
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let (name, email, password) = test_helper::fake_credentials();
