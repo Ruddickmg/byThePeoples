@@ -25,7 +25,8 @@ impl ConnectionPool {
         Ok(client::Client::new(self.pool.get().await?))
     }
     pub async fn migrate(&self, path: &str) -> Result<()> {
-        let sql_files = files::by_extension(path, SQL_EXTENSION);
+        let mut sql_files = files::by_extension(path, SQL_EXTENSION);
+        sql_files.sort();
         println!("files: {:#?}", sql_files);
         let client = self.client().await?;
         for file_path in sql_files.iter() {
