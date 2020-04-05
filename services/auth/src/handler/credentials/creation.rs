@@ -6,28 +6,23 @@ use actix_web::{web, HttpResponse};
 
 pub async fn save_credentials(
     state: web::Data<model::ServiceState>,
-    json: web::Json<model::CredentialsRequest>,
+    json: web::Json<model::FullRequest>,
 ) -> HttpResponse {
-    if let model::AuthRequest::Full(user_credentials) = model::AuthRequest::from(json) {
-        if let Ok(result) = credentials::create(&state.db, user_credentials).await {
-            match result {
-                credentials::SaveResults::Conflict => HttpResponse::Conflict().finish(),
-                credentials::SaveResults::WeakPassword => HttpResponse::Forbidden().finish(),
-                credentials::SaveResults::Saved(stored_credentials) => {
-                    if let Ok(response) =
-                        jwt::set_token(HttpResponse::Created(), stored_credentials)
-                    {
-                        response
-                    } else {
-                        HttpResponse::InternalServerError().finish()
-                    }
+    let user_credentials = model::FullRequest::from(json);
+    if let Ok(result) = credentials::create(&state.db, user_credentials).await {
+        match result {
+            credentials::SaveResults::Conflict => HttpResponse::Conflict().finish(),
+            credentials::SaveResults::WeakPassword => HttpResponse::Forbidden().finish(),
+            credentials::SaveResults::Saved(stored_credentials) => {
+                if let Ok(response) = jwt::set_token(HttpResponse::Created(), stored_credentials) {
+                    response
+                } else {
+                    HttpResponse::InternalServerError().finish()
                 }
             }
-        } else {
-            HttpResponse::InternalServerError().finish()
         }
     } else {
-        HttpResponse::BadRequest().finish()
+        HttpResponse::InternalServerError().finish()
     }
 }
 
@@ -48,7 +43,7 @@ mod credentials_handler_tests {
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialsRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = save_credentials(request_state, json).await;
@@ -65,7 +60,7 @@ mod credentials_handler_tests {
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialsRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         save_credentials(request_state, json).await;
@@ -88,7 +83,7 @@ mod credentials_handler_tests {
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialsRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = save_credentials(request_state, json).await;
@@ -107,7 +102,7 @@ mod credentials_handler_tests {
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialsRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = save_credentials(request_state, json).await;
@@ -126,7 +121,7 @@ mod credentials_handler_tests {
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialsRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = save_credentials(request_state, json).await;
@@ -145,7 +140,7 @@ mod credentials_handler_tests {
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialsRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = save_credentials(request_state, json).await;
@@ -164,7 +159,7 @@ mod credentials_handler_tests {
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialsRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = save_credentials(request_state, json).await;
@@ -180,7 +175,7 @@ mod credentials_handler_tests {
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialsRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = save_credentials(request_state, json).await;
@@ -195,55 +190,10 @@ mod credentials_handler_tests {
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialsRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = save_credentials(request_state, json).await;
         assert!(!resp.headers().contains_key(http::header::AUTHORIZATION));
-    }
-
-    #[actix_rt::test]
-    async fn returns_bad_request_if_name_is_missing_from_the_request() {
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
-        let (_name, email, password) = test_helper::fake_credentials();
-        let request_data = model::CredentialsRequest::new(&None, &Some(email), &Some(password));
-        let (req, mut payload) = test::TestRequest::post()
-            .set_json(&request_data)
-            .to_http_parts();
-        let json = web::Json::<model::CredentialsRequest>::from_request(&req, &mut payload)
-            .await
-            .unwrap();
-        let resp = save_credentials(request_state, json).await;
-        assert_eq!(resp.status(), status_codes::BAD_REQUEST);
-    }
-
-    #[actix_rt::test]
-    async fn returns_bad_request_if_password_is_missing_from_the_request() {
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
-        let (name, email, _password) = test_helper::fake_credentials();
-        let request_data = model::CredentialsRequest::new(&Some(name), &Some(email), &None);
-        let (req, mut payload) = test::TestRequest::post()
-            .set_json(&request_data)
-            .to_http_parts();
-        let json = web::Json::<model::CredentialsRequest>::from_request(&req, &mut payload)
-            .await
-            .unwrap();
-        let resp = save_credentials(request_state, json).await;
-        assert_eq!(resp.status(), status_codes::BAD_REQUEST);
-    }
-
-    #[actix_rt::test]
-    async fn returns_bad_request_if_email_is_missing_from_the_request() {
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
-        let (name, _email, password) = test_helper::fake_credentials();
-        let request_data = model::CredentialsRequest::new(&Some(name), &None, &Some(password));
-        let (req, mut payload) = test::TestRequest::post()
-            .set_json(&request_data)
-            .to_http_parts();
-        let json = web::Json::<model::CredentialsRequest>::from_request(&req, &mut payload)
-            .await
-            .unwrap();
-        let resp = save_credentials(request_state, json).await;
-        assert_eq!(resp.status(), status_codes::BAD_REQUEST);
     }
 }

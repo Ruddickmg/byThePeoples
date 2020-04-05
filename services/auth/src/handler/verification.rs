@@ -6,13 +6,9 @@ use actix_web::{web, HttpResponse};
 
 pub async fn authenticate_credentials(
     state: web::Data<model::ServiceState>,
-    json: web::Json<model::CredentialsRequest>,
+    json: web::Json<model::NameRequest>,
 ) -> HttpResponse {
-    let user_credentials = match model::AuthRequest::from(json) {
-        model::AuthRequest::Full(full) => model::NameRequest::from(full),
-        model::AuthRequest::Name(name_request) => name_request,
-        _ => return HttpResponse::BadRequest().finish(),
-    };
+    let user_credentials = model::NameRequest::from(json);
     if let Ok(stored_credentials) = authorization::authorize(&user_credentials, &state.db).await {
         match stored_credentials {
             authorization::Results::Valid(credentials) => {
@@ -48,7 +44,7 @@ mod auth_tests {
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialsRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::NameRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = authenticate_credentials(request_state, json).await;
@@ -69,7 +65,7 @@ mod auth_tests {
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialsRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::NameRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = authenticate_credentials(request_state, json).await;
@@ -85,7 +81,7 @@ mod auth_tests {
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialsRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::NameRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = authenticate_credentials(request_state, json).await;
@@ -104,41 +100,11 @@ mod auth_tests {
         let (req, mut payload) = test::TestRequest::post()
             .set_json(&request_data)
             .to_http_parts();
-        let json = web::Json::<model::CredentialsRequest>::from_request(&req, &mut payload)
+        let json = web::Json::<model::NameRequest>::from_request(&req, &mut payload)
             .await
             .unwrap();
         let resp = authenticate_credentials(request_state, json).await;
         helper.delete_credentials_by_name(&name).await;
         assert_eq!(resp.status(), status_codes::UNAUTHORIZED);
-    }
-
-    #[actix_rt::test]
-    async fn errors_with_bad_request_if_name_is_missing_from_the_request() {
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
-        let (_name, _email, password) = test_helper::fake_credentials();
-        let request_data = model::CredentialsRequest::new(&None, &None, &Some(password));
-        let (req, mut payload) = test::TestRequest::post()
-            .set_json(&request_data)
-            .to_http_parts();
-        let json = web::Json::<model::CredentialsRequest>::from_request(&req, &mut payload)
-            .await
-            .unwrap();
-        let resp = authenticate_credentials(request_state, json).await;
-        assert_eq!(resp.status(), status_codes::BAD_REQUEST);
-    }
-
-    #[actix_rt::test]
-    async fn errors_with_bad_request_if_password_is_missing_from_the_request() {
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
-        let (_name, _email, password) = test_helper::fake_credentials();
-        let request_data = model::CredentialsRequest::new(&None, &None, &Some(password));
-        let (req, mut payload) = test::TestRequest::post()
-            .set_json(&request_data)
-            .to_http_parts();
-        let json = web::Json::<model::CredentialsRequest>::from_request(&req, &mut payload)
-            .await
-            .unwrap();
-        let resp = authenticate_credentials(request_state, json).await;
-        assert_eq!(resp.status(), status_codes::BAD_REQUEST);
     }
 }
