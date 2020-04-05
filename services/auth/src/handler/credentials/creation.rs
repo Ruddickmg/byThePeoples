@@ -37,6 +37,7 @@ mod credentials_handler_tests {
     use super::*;
     use crate::{model, utilities::test as test_helper};
     use actix_web::{http, test, FromRequest};
+    use std::intrinsics::prefetch_read_instruction;
 
     const WEAK_PASSWORD: &str = "password";
 
