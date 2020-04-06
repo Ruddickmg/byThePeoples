@@ -1,3 +1,4 @@
+use crate::utilities::constants::SUSPENDED_ACCOUNT_MESSAGE;
 use crate::{controller::credentials, model};
 use actix_web::{web, HttpResponse};
 
@@ -8,11 +9,13 @@ pub async fn delete_credentials(
     let user_credentials = model::EmailRequest::from(json);
     match credentials::delete(&state.db, user_credentials).await {
         Ok(deletion) => match deletion {
-            credentials::DeleteResults::Success => HttpResponse::Accepted(),
-            credentials::DeleteResults::NotFound => HttpResponse::NotFound(),
-            credentials::DeleteResults::Unauthorized => HttpResponse::Unauthorized(),
-        }
-        .finish(),
+            credentials::DeleteResults::Success => HttpResponse::Accepted().finish(),
+            credentials::DeleteResults::NotFound => HttpResponse::NotFound().finish(),
+            credentials::DeleteResults::Unauthorized => HttpResponse::Unauthorized().finish(),
+            credentials::DeleteResults::Suspended => {
+                HttpResponse::Forbidden().body(SUSPENDED_ACCOUNT_MESSAGE)
+            }
+        },
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
@@ -97,4 +100,21 @@ mod credential_deletion_test {
         helper.delete_credentials_by_name(&name).await;
         assert_ne!(stored_credentials.deleted_at, None);
     }
+
+    // TODO test suspension
+
+    #[actix_rt::test]
+    async fn errors_with_forbidden_if_a_user_has_been_suspended() {}
+
+    #[actix_rt::test]
+    async fn suspends_a_user_if_they_have_exceeded_the_allowed_failed_login_attempts() {}
+
+    #[actix_rt::test]
+    async fn deletes_the_login_history_once_a_user_has_been_suspended() {}
+
+    #[actix_rt::test]
+    async fn deletes_the_failed_login_history_if_a_user_successfully_logs_in() {}
+
+    #[actix_rt::test]
+    async fn creates_a_log_of_failed_login_attempts() {}
 }

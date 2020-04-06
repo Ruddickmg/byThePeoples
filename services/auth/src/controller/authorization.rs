@@ -23,15 +23,7 @@ pub async fn authorize(
             if password::authenticate(&user_credentials.password, &auth_record.hash)? {
                 Ok(Results::Valid(auth_record))
             } else {
-                let failed_logins = failed_login.log(user_id).await?;
-                if failed_logins.exceeded_limit() {
-                    let reset = failed_login.delete(user_id);
-                    if failed_logins.expired()? {
-                        reset.await?;
-                    } else {
-                        join(auth_credentials.suspend(user_id), reset).await;
-                    }
-                };
+                failed_login.suspend(user_id).await?;
                 Ok(Results::Invalid)
             }
         }

@@ -1,3 +1,4 @@
+use crate::utilities::constants::SUSPENDED_ACCOUNT_MESSAGE;
 use crate::{
     controller::{credentials, jwt},
     model,

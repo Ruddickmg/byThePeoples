@@ -1,3 +1,4 @@
+use crate::utilities::constants::SUSPENDED_ACCOUNT_MESSAGE;
 use crate::{
     controller::{credentials, jwt},
     model,
@@ -20,6 +21,9 @@ pub async fn update(
                     Ok(authenticated_response) => authenticated_response,
                     Err(_) => HttpResponse::InternalServerError().finish(),
                 }
+            }
+            credentials::UpdateResults::Suspended => {
+                HttpResponse::Forbidden().body(SUSPENDED_ACCOUNT_MESSAGE)
             }
             credentials::UpdateResults::Unauthorized => HttpResponse::Unauthorized().finish(),
             credentials::UpdateResults::NotFound => HttpResponse::NotFound().finish(),
@@ -250,4 +254,21 @@ mod update_credentials_test {
         let resp = update(request_state, json).await;
         assert!(!resp.headers().contains_key(http::header::AUTHORIZATION));
     }
+
+    // TODO test suspension
+
+    #[actix_rt::test]
+    async fn errors_with_forbidden_if_a_user_has_been_suspended() {}
+
+    #[actix_rt::test]
+    async fn suspends_a_user_if_they_have_exceeded_the_allowed_failed_login_attempts() {}
+
+    #[actix_rt::test]
+    async fn deletes_the_login_history_once_a_user_has_been_suspended() {}
+
+    #[actix_rt::test]
+    async fn deletes_the_failed_login_history_if_a_user_successfully_logs_in() {}
+
+    #[actix_rt::test]
+    async fn creates_a_log_of_failed_login_attempts() {}
 }

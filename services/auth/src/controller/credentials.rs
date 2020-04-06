@@ -45,6 +45,7 @@ pub async fn create(
 pub enum DeleteResults {
     Success,
     NotFound,
+    Suspended,
     Unauthorized,
 }
 
@@ -54,12 +55,18 @@ pub async fn delete(
 ) -> Result<DeleteResults, Error> {
     let client = db.client().await?;
     let mut credentials = repository::Credentials::new(&client);
+    let failed_login = repository::FailedLogin::new(&client);
     if let Some(stored_credentials) = credentials.by_email(&email).await? {
-        if password::authenticate(&password, &stored_credentials.hash)? {
-            credentials.mark_as_deleted_by_email(&email).await?;
-            Ok(DeleteResults::Success)
+        if stored_credentials.suspended()? {
+            Ok(DeleteResults::Suspended)
         } else {
-            Ok(DeleteResults::Unauthorized)
+            if password::authenticate(&password, &stored_credentials.hash)? {
+                credentials.mark_as_deleted_by_email(&email).await?;
+                Ok(DeleteResults::Success)
+            } else {
+                failed_login.suspend(&stored_credentials.id).await?;
+                Ok(DeleteResults::Unauthorized)
+            }
         }
     } else {
         Ok(DeleteResults::NotFound)
@@ -69,6 +76,7 @@ pub async fn delete(
 pub enum UpdateResults {
     Success(model::Credentials),
     NotFound,
+    Suspended,
     Unauthorized,
 }
 
@@ -79,30 +87,36 @@ pub async fn update(
 ) -> Result<UpdateResults, Error> {
     let client = db.client().await?;
     let mut credentials = repository::Credentials::new(&client);
+    let failed_login = repository::FailedLogin::new(&client);
     if let Some(stored_credentials) = credentials.by_email(&auth_details.email).await? {
-        if password::authenticate(&auth_details.password, &stored_credentials.hash)? {
-            let updated_credentials = credentials
-                .update_credentials(&model::Credentials {
-                    name: match &credential_updates.name {
-                        Some(name) => String::from(name),
-                        None => String::from(&stored_credentials.name),
-                    },
-                    email: match &credential_updates.email {
-                        Some(email) => String::from(email),
-                        None => String::from(&stored_credentials.email),
-                    },
-                    hash: match &credential_updates.password {
-                        Some(updated_password) => {
-                            String::from(password::hash_password(updated_password)?)
-                        }
-                        None => String::from(&stored_credentials.hash),
-                    },
-                    ..stored_credentials
-                })
-                .await?;
-            Ok(UpdateResults::Success(updated_credentials))
+        if stored_credentials.suspended()? {
+            Ok(UpdateResults::Suspended)
         } else {
-            Ok(UpdateResults::Unauthorized)
+            if password::authenticate(&auth_details.password, &stored_credentials.hash)? {
+                let updated_credentials = credentials
+                    .update_credentials(&model::Credentials {
+                        name: match &credential_updates.name {
+                            Some(name) => String::from(name),
+                            None => String::from(&stored_credentials.name),
+                        },
+                        email: match &credential_updates.email {
+                            Some(email) => String::from(email),
+                            None => String::from(&stored_credentials.email),
+                        },
+                        hash: match &credential_updates.password {
+                            Some(updated_password) => {
+                                String::from(password::hash_password(updated_password)?)
+                            }
+                            None => String::from(&stored_credentials.hash),
+                        },
+                        ..stored_credentials
+                    })
+                    .await?;
+                Ok(UpdateResults::Success(updated_credentials))
+            } else {
+                failed_login.suspend(&stored_credentials.id).await?;
+                Ok(UpdateResults::Unauthorized)
+            }
         }
     } else {
         Ok(UpdateResults::NotFound)

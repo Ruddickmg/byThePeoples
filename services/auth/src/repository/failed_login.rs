@@ -1,4 +1,5 @@
-use crate::{model, Error};
+use crate::{model, model::credentials, Error};
+use futures::future::join;
 
 const GET_FAILED_LOGIN: &str =
     "SELECT user_id, attempts, created_at, updated_at FROM auth.failed_login WHERE user_id = $1";
@@ -39,6 +40,23 @@ impl<'a> FailedLogin<'a> {
         self.client
             .execute(DELETE_FAILED_LOGIN_RECORD, &[&id])
             .await?;
+        Ok(())
+    }
+    pub async fn suspend(&self, user_id: &model::CredentialId) -> Result<(), Error> {
+        let failed_logins = self.log(user_id).await?;
+        if failed_logins.exceeded_limit() {
+            let reset = self.delete(user_id);
+            if failed_logins.expired()? {
+                reset.await?;
+            } else {
+                join(
+                    reset,
+                    self.client
+                        .execute(credentials::query::SUSPEND, &[&user_id]),
+                )
+                .await;
+            }
+        }
         Ok(())
     }
 }

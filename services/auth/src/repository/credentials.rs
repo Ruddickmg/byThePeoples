@@ -95,10 +95,4 @@ impl<'a> Credentials<'a> {
             .await?;
         Ok(())
     }
-    pub async fn suspend(&mut self, id: &model::CredentialId) -> Result<(), Error> {
-        self.client
-            .execute(credentials::query::SUSPEND, &[&id])
-            .await?;
-        Ok(())
-    }
 }

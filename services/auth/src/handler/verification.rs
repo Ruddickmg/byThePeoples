@@ -1,3 +1,4 @@
+use crate::utilities::constants::SUSPENDED_ACCOUNT_MESSAGE;
 use crate::{
     controller::{authorization, jwt},
     model,
@@ -18,7 +19,9 @@ pub async fn authenticate_credentials(
                 }
             }
             authorization::Results::Invalid => HttpResponse::Unauthorized().finish(),
-            authorization::Results::Suspended => HttpResponse::Forbidden().finish(),
+            authorization::Results::Suspended => {
+                HttpResponse::Forbidden().body(SUSPENDED_ACCOUNT_MESSAGE)
+            }
             authorization::Results::None => HttpResponse::NotFound().finish(),
         },
         Err(error) => {
