@@ -30,7 +30,7 @@ impl Helper {
     ) -> Result<Option<model::Credentials>, Error> {
         let db = &self.state.db;
         let client = db.client().await?;
-        let mut credentials = repository::Credentials::new(client);
+        let mut credentials = repository::Credentials::new(&client);
         Ok(credentials.by_name(&name).await?)
     }
     pub async fn add_credentials(

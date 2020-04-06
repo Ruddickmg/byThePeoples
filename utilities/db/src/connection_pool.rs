@@ -27,11 +27,9 @@ impl ConnectionPool {
     pub async fn migrate(&self, path: &str) -> Result<()> {
         let mut sql_files = files::by_extension(path, SQL_EXTENSION);
         sql_files.sort();
-        println!("files: {:#?}", sql_files);
         let client = self.client().await?;
         for file_path in sql_files.iter() {
             let sql = fs::read_to_string(file_path)?;
-            println!("sql {}", sql);
             client.batch(&sql).await?;
         }
         Ok(())

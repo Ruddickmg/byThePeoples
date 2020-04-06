@@ -3,7 +3,7 @@ use crate::{model, model::credentials, Error};
 type CredentialResults = Result<Option<model::Credentials>, Error>;
 
 pub struct Credentials<'a> {
-    client: database::Client<'a>,
+    client: &'a database::Client<'a>,
 }
 
 pub enum Status {
@@ -13,7 +13,7 @@ pub enum Status {
 }
 
 impl<'a> Credentials<'a> {
-    pub fn new(client: database::Client<'a>) -> Credentials {
+    pub fn new(client: &'a database::Client<'a>) -> Credentials {
         Credentials { client }
     }
     async fn get_by_single_param(&mut self, query: &str, param: &str) -> CredentialResults {
@@ -92,6 +92,12 @@ impl<'a> Credentials<'a> {
             .await?;
         self.client
             .query::<credentials::AffectedRows>(&stmt, &[&email])
+            .await?;
+        Ok(())
+    }
+    pub async fn suspend(&mut self, id: &model::CredentialId) -> Result<(), Error> {
+        self.client
+            .execute(credentials::query::SUSPEND, &[&id])
             .await?;
         Ok(())
     }

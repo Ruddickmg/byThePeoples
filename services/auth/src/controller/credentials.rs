@@ -19,7 +19,7 @@ pub async fn create(
         Ok(SaveResults::WeakPassword(problems))
     } else {
         let client = db.client().await?;
-        let mut credentials = repository::Credentials::new(client);
+        let mut credentials = repository::Credentials::new(&client);
         let hash = password::hash_password(&password)?;
         let encrypted_credentials = model::FullRequest {
             name: String::from(&name),
@@ -53,7 +53,7 @@ pub async fn delete(
     model::EmailRequest { password, email }: model::EmailRequest,
 ) -> Result<DeleteResults, Error> {
     let client = db.client().await?;
-    let mut credentials = repository::Credentials::new(client);
+    let mut credentials = repository::Credentials::new(&client);
     if let Some(stored_credentials) = credentials.by_email(&email).await? {
         if password::authenticate(&password, &stored_credentials.hash)? {
             credentials.mark_as_deleted_by_email(&email).await?;
@@ -78,7 +78,7 @@ pub async fn update(
     credential_updates: &model::CredentialsRequest,
 ) -> Result<UpdateResults, Error> {
     let client = db.client().await?;
-    let mut credentials = repository::Credentials::new(client);
+    let mut credentials = repository::Credentials::new(&client);
     if let Some(stored_credentials) = credentials.by_email(&auth_details.email).await? {
         if password::authenticate(&auth_details.password, &stored_credentials.hash)? {
             let updated_credentials = credentials

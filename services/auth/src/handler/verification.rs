@@ -18,6 +18,7 @@ pub async fn authenticate_credentials(
                 }
             }
             authorization::Results::Invalid => HttpResponse::Unauthorized().finish(),
+            authorization::Results::Suspended => HttpResponse::Forbidden().finish(),
             authorization::Results::None => HttpResponse::NotFound().finish(),
         }
     } else {
