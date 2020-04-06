@@ -9,8 +9,8 @@ pub async fn authenticate_credentials(
     json: web::Json<model::NameRequest>,
 ) -> HttpResponse {
     let user_credentials = model::NameRequest::from(json);
-    if let Ok(stored_credentials) = authorization::authorize(&user_credentials, &state.db).await {
-        match stored_credentials {
+    match authorization::authorize(&user_credentials, &state.db).await {
+        Ok(stored_credentials) => match stored_credentials {
             authorization::Results::Valid(credentials) => {
                 match jwt::set_token(HttpResponse::Ok(), credentials) {
                     Ok(authenticated_response) => authenticated_response,
@@ -20,9 +20,11 @@ pub async fn authenticate_credentials(
             authorization::Results::Invalid => HttpResponse::Unauthorized().finish(),
             authorization::Results::Suspended => HttpResponse::Forbidden().finish(),
             authorization::Results::None => HttpResponse::NotFound().finish(),
+        },
+        Err(error) => {
+            println!("{:#?}", error);
+            HttpResponse::InternalServerError().finish()
         }
-    } else {
-        HttpResponse::InternalServerError().finish()
     }
 }
 

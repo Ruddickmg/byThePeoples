@@ -14,6 +14,7 @@ pub type Row = tokio_postgres::Row;
 pub type Timestamp = SystemTime;
 pub type Results = Vec<Row>;
 pub type Params<'a> = &'a [&'a (dyn tokio_postgres::types::ToSql + Sync)];
+pub type SmallInt = i16;
 
 pub use client::Client;
 pub use configuration::Configuration;

@@ -5,7 +5,7 @@ pub struct FailedLogin {
     user_id: CredentialId,
     updated_at: database::Timestamp,
     created_at: database::Timestamp,
-    attempts: i32,
+    attempts: database::SmallInt,
 }
 
 impl FailedLogin {

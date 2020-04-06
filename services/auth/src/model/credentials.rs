@@ -1,4 +1,4 @@
-use crate::{configuration::ACCOUNT_LOCK_DURATION_IN_SECONDS, Error};
+use crate::{utilities::constants::ACCOUNT_LOCK_DURATION_IN_SECONDS, Error};
 use std::time::Duration;
 
 pub type CredentialId = i32;
@@ -9,7 +9,7 @@ pub mod query {
     pub const SAVE: &str = "INSERT INTO auth.credentials(name, email, hash) VALUES ($1, $2, $3)";
     pub const DELETED_AT: &str =
         "SELECT deleted_at FROM auth.credentials WHERE name = $1 OR email = $2";
-    pub const UPDATE: &str = "UPDATE auth.credentials SET name = $1, hash = $2, email = $3, updated_at = CURRENT_TIMESTAMP, deleted_at = null WHERE id = $4 RETURNING id, email, name, hash, created_at, updated_at, deleted_at";
+    pub const UPDATE: &str = "UPDATE auth.credentials SET name = $1, hash = $2, email = $3, updated_at = CURRENT_TIMESTAMP, deleted_at = null WHERE id = $4 RETURNING id, email, name, hash, created_at, updated_at, deleted_at, locked_at";
     pub const DELETE_BY_EMAIL: &str =
         "UPDATE auth.credentials SET deleted_at = CURRENT_TIMESTAMP WHERE email = $1";
     pub const SUSPEND: &str =

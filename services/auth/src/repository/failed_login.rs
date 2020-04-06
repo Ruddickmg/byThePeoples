@@ -3,11 +3,11 @@ use crate::{model, Error};
 const GET_FAILED_LOGIN: &str =
     "SELECT user_id, attempts, created_at, updated_at FROM auth.failed_login WHERE user_id = $1";
 const CREATE_OR_UPDATE_FAILED_LOGIN: &str = "INSERT INTO auth.failed_login(user_id) VALUES ($1)
- ON CONFLICT DO
+ ON CONFLICT (user_id) DO
      UPDATE
      SET
-         attempts = attempts + 1,
-         updated_at = CURRENT_TIMESTAMP
+      attempts = failed_login.attempts + 1,
+      updated_at = CURRENT_TIMESTAMP
 RETURNING user_id, attempts, created_at, updated_at;";
 const DELETE_FAILED_LOGIN_RECORD: &str = "DELETE FROM auth.failed_login WHERE user_id = $1";
 
