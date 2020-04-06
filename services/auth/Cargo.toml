@@ -8,7 +8,6 @@ edition = "2018"
 database = { path = "../../utilities/db" }
 environment = { path = "../../utilities/environment" }
 status_codes = { path = "../../utilities/status_codes" }
-chrono = "0.4.11"
 rustls = "0.16.0"
 actix-web = "2.0.0"
 actix-rt = "1.0.0"

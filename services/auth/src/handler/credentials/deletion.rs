@@ -20,10 +20,8 @@ pub async fn delete_credentials(
 #[cfg(test)]
 mod credential_deletion_test {
     use super::*;
-    use crate::model::EmailRequest;
     use crate::{controller, model, utilities::test as test_helper};
     use actix_rt;
-    use actix_web::test::TestRequest;
     use actix_web::{test, web, FromRequest};
 
     #[actix_rt::test]

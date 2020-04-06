@@ -1,4 +1,4 @@
-use crate::{utilities::constants::ACCOUNT_LOCK_DURATION_IN_SECONDS, Error};
+use crate::{configuration::ACCOUNT_LOCK_DURATION_IN_SECONDS, Error};
 use std::time::Duration;
 
 pub type CredentialId = i32;

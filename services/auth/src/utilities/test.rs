@@ -1,8 +1,6 @@
 use crate::{model, repository, Error};
-use actix_web::{test, web, FromRequest};
 use fake::faker::{internet::en as internet, name::en as name};
 use fake::Fake;
-use serde::{Deserialize, Serialize};
 
 const MAX_FAKE_PASSWORD_LENGTH: usize = 20;
 const MIN_FAKE_PASSWORD_LENGTH: usize = 15;

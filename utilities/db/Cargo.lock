@@ -135,7 +135,6 @@ dependencies = [
  "async-trait",
  "bb8",
  "bb8-postgres",
- "chrono",
  "environment",
  "files",
  "futures",
