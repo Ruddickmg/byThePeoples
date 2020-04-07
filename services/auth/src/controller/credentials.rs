@@ -83,7 +83,11 @@ pub enum UpdateResults {
 pub async fn update(
     db: &model::Database,
     auth_details: &model::EmailRequest,
-    credential_updates: &model::CredentialsRequest,
+    model::CredentialsRequest {
+        name,
+        email,
+        password,
+    }: &model::CredentialsRequest,
 ) -> Result<UpdateResults, Error> {
     let client = db.client().await?;
     let mut credentials = repository::Credentials::new(&client);
@@ -95,19 +99,13 @@ pub async fn update(
             if password::authenticate(&auth_details.password, &stored_credentials.hash)? {
                 let updated_credentials = credentials
                     .update_credentials(&model::Credentials {
-                        name: match &credential_updates.name {
-                            Some(name) => String::from(name),
-                            None => String::from(&stored_credentials.name),
-                        },
-                        email: match &credential_updates.email {
-                            Some(email) => String::from(email),
-                            None => String::from(&stored_credentials.email),
-                        },
-                        hash: match &credential_updates.password {
-                            Some(updated_password) => {
-                                String::from(password::hash_password(updated_password)?)
-                            }
-                            None => String::from(&stored_credentials.hash),
+                        name: name.as_ref().map_or(stored_credentials.name, String::from),
+                        email: email
+                            .as_ref()
+                            .map_or(stored_credentials.email, String::from),
+                        hash: match &password {
+                            Some(p) => password::hash_password(p)?,
+                            None => stored_credentials.hash,
                         },
                         ..stored_credentials
                     })
