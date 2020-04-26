@@ -1,4 +1,4 @@
-use crate::utilities::constants::{HOURS_IN_A_DAY, MINUTES_IN_AN_HOUR, SECONDS_IN_A_MINUTE};
+use crate::constants::{HOURS_IN_A_DAY, MINUTES_IN_AN_HOUR, SECONDS_IN_A_MINUTE};
 
 pub mod database;
 pub mod hash;

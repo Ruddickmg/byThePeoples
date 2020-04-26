@@ -1,4 +1,4 @@
-use crate::utilities::constants::SUSPENDED_ACCOUNT_MESSAGE;
+use crate::constants::SUSPENDED_ACCOUNT_MESSAGE;
 use crate::{
     controller::{credentials, jwt},
     model,
@@ -13,20 +13,17 @@ pub async fn update(
     let model::UpdateCredentials {
         auth,
         credentials: updates,
-    }: model::UpdateCredentials = update_credentials;
+    } = update_credentials;
     if let Ok(status) = credentials::update(&state.db, &auth, &updates).await {
         match status {
             credentials::UpdateResults::Success(credentials) => {
-                match jwt::set_token(HttpResponse::Ok(), credentials) {
-                    Ok(authenticated_response) => authenticated_response,
-                    Err(_) => HttpResponse::InternalServerError().finish(),
-                }
+                jwt::set_token(HttpResponse::Ok(), credentials)
+                    .unwrap_or(HttpResponse::InternalServerError().finish())
             }
             credentials::UpdateResults::Suspended => {
                 HttpResponse::Forbidden().body(SUSPENDED_ACCOUNT_MESSAGE)
             }
-            credentials::UpdateResults::Unauthorized => HttpResponse::Unauthorized().finish(),
-            credentials::UpdateResults::NotFound => HttpResponse::NotFound().finish(),
+            _ => HttpResponse::Unauthorized().finish(),
         }
     } else {
         HttpResponse::InternalServerError().finish()
@@ -225,7 +222,7 @@ mod update_credentials_test {
     }
 
     #[actix_rt::test]
-    async fn returns_not_found_if_no_associated_record_exists() {
+    async fn returns_unauthorized_if_no_associated_record_exists() {
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let helper = test_helper::Helper::new().await.unwrap();
         let (_name, email, password) = test_helper::fake_credentials();
@@ -237,7 +234,7 @@ mod update_credentials_test {
             .await
             .unwrap();
         let resp = update(request_state, json).await;
-        assert_eq!(resp.status(), status_codes::NOT_FOUND);
+        assert_eq!(resp.status(), status_codes::UNAUTHORIZED);
     }
 
     #[actix_rt::test]

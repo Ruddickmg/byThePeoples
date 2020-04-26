@@ -1,5 +1,4 @@
-use crate::utilities::constants::SUSPENDED_ACCOUNT_MESSAGE;
-use crate::{controller::credentials, model};
+use crate::{constants::SUSPENDED_ACCOUNT_MESSAGE, controller::credentials, model};
 use actix_web::{web, HttpResponse};
 
 pub async fn delete_credentials(
@@ -10,11 +9,10 @@ pub async fn delete_credentials(
     match credentials::delete(&state.db, user_credentials).await {
         Ok(deletion) => match deletion {
             credentials::DeleteResults::Success => HttpResponse::Accepted().finish(),
-            credentials::DeleteResults::NotFound => HttpResponse::NotFound().finish(),
-            credentials::DeleteResults::Unauthorized => HttpResponse::Unauthorized().finish(),
             credentials::DeleteResults::Suspended => {
                 HttpResponse::Forbidden().body(SUSPENDED_ACCOUNT_MESSAGE)
             }
+            _ => HttpResponse::Unauthorized().finish(),
         },
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
@@ -28,7 +26,7 @@ mod credential_deletion_test {
     use actix_web::{test, web, FromRequest};
 
     #[actix_rt::test]
-    async fn returns_not_found_if_no_record_exists() {
+    async fn returns_unauthorized_if_no_record_exists() {
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let (_name, email, password) = test_helper::fake_credentials();
         let data = model::EmailRequest::new(&email, &password);
@@ -38,7 +36,7 @@ mod credential_deletion_test {
             .await
             .unwrap();
         let resp = delete_credentials(request_state, json).await;
-        assert_eq!(resp.status(), status_codes::NOT_FOUND);
+        assert_eq!(resp.status(), status_codes::UNAUTHORIZED);
     }
 
     #[actix_rt::test]

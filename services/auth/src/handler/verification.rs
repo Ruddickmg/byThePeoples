@@ -1,4 +1,4 @@
-use crate::utilities::constants::SUSPENDED_ACCOUNT_MESSAGE;
+use crate::constants::SUSPENDED_ACCOUNT_MESSAGE;
 use crate::{
     controller::{authorization, jwt},
     model,
@@ -18,11 +18,10 @@ pub async fn authenticate_credentials(
                     Err(_) => HttpResponse::InternalServerError().finish(),
                 }
             }
-            authorization::Results::Invalid => HttpResponse::Unauthorized().finish(),
             authorization::Results::Suspended => {
                 HttpResponse::Forbidden().body(SUSPENDED_ACCOUNT_MESSAGE)
             }
-            authorization::Results::None => HttpResponse::NotFound().finish(),
+            _ => HttpResponse::Unauthorized().finish(),
         },
         Err(error) => {
             println!("{:#?}", error);
@@ -80,7 +79,7 @@ mod auth_tests {
     }
 
     #[actix_rt::test]
-    async fn errors_with_not_found_if_no_record_exists() {
+    async fn errors_with_unauthorized_if_no_record_exists() {
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let (name, _email, password) = test_helper::fake_credentials();
         let request_data = model::NameRequest::new(&name, &password);
@@ -91,7 +90,7 @@ mod auth_tests {
             .await
             .unwrap();
         let resp = authenticate_credentials(request_state, json).await;
-        assert_eq!(resp.status(), status_codes::NOT_FOUND);
+        assert_eq!(resp.status(), status_codes::UNAUTHORIZED);
     }
 
     #[actix_rt::test]

@@ -1,5 +1,5 @@
-use crate::utilities::constants::SUSPENDED_ACCOUNT_MESSAGE;
 use crate::{
+    constants::SUSPENDED_ACCOUNT_MESSAGE,
     controller::{credentials, jwt},
     model,
 };
