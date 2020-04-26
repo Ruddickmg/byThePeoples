@@ -20,7 +20,7 @@ pub async fn save_credentials(
                     HttpResponse::InternalServerError().finish()
                 }
             }
-            credentials::SaveResults::Saved(stored_credentials) => {
+            credentials::SaveResults::Success(stored_credentials) => {
                 if let Ok(response) = jwt::set_token(HttpResponse::Created(), stored_credentials) {
                     response
                 } else {

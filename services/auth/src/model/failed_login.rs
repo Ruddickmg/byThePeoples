@@ -33,3 +33,14 @@ impl From<database::Row> for FailedLogin {
         }
     }
 }
+
+impl From<&database::Row> for FailedLogin {
+    fn from(row: &database::Row) -> FailedLogin {
+        FailedLogin {
+            user_id: row.get(0),
+            attempts: row.get(1),
+            created_at: row.get(2),
+            updated_at: row.get(3),
+        }
+    }
+}

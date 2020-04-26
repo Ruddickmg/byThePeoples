@@ -18,9 +18,6 @@ pub async fn authenticate_credentials(
                     Err(_) => HttpResponse::InternalServerError().finish(),
                 }
             }
-            authorization::Results::Suspended => {
-                HttpResponse::Forbidden().body(SUSPENDED_ACCOUNT_MESSAGE)
-            }
             _ => HttpResponse::Unauthorized().finish(),
         },
         Err(error) => {

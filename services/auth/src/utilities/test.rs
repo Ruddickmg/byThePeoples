@@ -1,6 +1,14 @@
-use crate::{model, repository, Error};
+use crate::{
+    model,
+    model::{credentials::query::SUSPEND, CredentialId},
+    repository, Error,
+};
 use fake::faker::{internet::en as internet, name::en as name};
 use fake::Fake;
+
+const CREATE_OR_UPDATE_FAILED_LOGIN: &str = "INSERT INTO auth.failed_login(user_id, attempts, updated_at) VALUES ($1, $2, CURRENT_TIMESTAMP);";
+const GET_FAILED_LOGIN_HISTORY: &str =
+    "SELECT user_id, attempts, created_at, updated_at FROM auth.failed_login WHERE user_id = $1;";
 
 const MAX_FAKE_PASSWORD_LENGTH: usize = 20;
 const MIN_FAKE_PASSWORD_LENGTH: usize = 15;
@@ -57,5 +65,37 @@ impl Helper {
             .execute("DELETE FROM auth.credentials WHERE name = $1", &[&name])
             .await
             .unwrap();
+    }
+    pub async fn suspend_user(&self, user_id: &CredentialId) {
+        let db = &self.state.db;
+        db.client()
+            .await
+            .unwrap()
+            .execute(SUSPEND, &[&user_id])
+            .await
+            .unwrap();
+    }
+    pub async fn set_login_attempts(&self, user_id: &CredentialId, attempts: &database::SmallInt) {
+        let db = &self.state.db;
+        db.client()
+            .await
+            .unwrap()
+            .execute(CREATE_OR_UPDATE_FAILED_LOGIN, &[&user_id, &attempts])
+            .await
+            .unwrap();
+    }
+    pub async fn get_login_history(
+        &self,
+        user_id: &CredentialId,
+    ) -> Result<Vec<model::FailedLogin>, Error> {
+        let db = &self.state.db;
+        let client = &db.client().await?;
+        let stmt = client.prepare(GET_FAILED_LOGIN_HISTORY).await?;
+        Ok(client
+            .query(&stmt, &[&user_id])
+            .await?
+            .iter()
+            .map(model::FailedLogin::from)
+            .collect())
     }
 }

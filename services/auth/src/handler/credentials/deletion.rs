@@ -9,9 +9,6 @@ pub async fn delete_credentials(
     match credentials::delete(&state.db, user_credentials).await {
         Ok(deletion) => match deletion {
             credentials::DeleteResults::Success => HttpResponse::Accepted().finish(),
-            credentials::DeleteResults::Suspended => {
-                HttpResponse::Forbidden().body(SUSPENDED_ACCOUNT_MESSAGE)
-            }
             _ => HttpResponse::Unauthorized().finish(),
         },
         Err(_) => HttpResponse::InternalServerError().finish(),
@@ -21,6 +18,7 @@ pub async fn delete_credentials(
 #[cfg(test)]
 mod credential_deletion_test {
     use super::*;
+    use crate::configuration::ALLOWED_FAILED_LOGIN_ATTEMPTS;
     use crate::{controller, model, utilities::test as test_helper};
     use actix_rt;
     use actix_web::{test, web, FromRequest};
@@ -102,17 +100,135 @@ mod credential_deletion_test {
     // TODO test suspension
 
     #[actix_rt::test]
-    async fn errors_with_forbidden_if_a_user_has_been_suspended() {}
+    async fn returns_unauthorized_if_a_user_has_been_suspended() {
+        let helper = test_helper::Helper::new().await.unwrap();
+        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let (name, email, password) = test_helper::fake_credentials();
+        let hashed_password = controller::password::hash_password(&password).unwrap();
+        let request_data = model::FullRequest::new(&name, &email, &hashed_password);
+        helper.add_credentials(&request_data).await;
+        let data = model::EmailRequest::new(&email, &password);
+        let stored_credentials = helper
+            .get_credentials_by_name(&name)
+            .await
+            .unwrap()
+            .unwrap();
+        helper.suspend_user(&stored_credentials.id).await;
+        let (req, mut payload) = test::TestRequest::delete().set_json(&data).to_http_parts();
+        let json = web::Json::<model::EmailRequest>::from_request(&req, &mut payload)
+            .await
+            .unwrap();
+        let resp = delete_credentials(request_state, json).await;
+        helper.delete_credentials_by_name(&name).await;
+        assert_eq!(resp.status(), status_codes::UNAUTHORIZED);
+    }
 
     #[actix_rt::test]
-    async fn suspends_a_user_if_they_have_exceeded_the_allowed_failed_login_attempts() {}
+    async fn suspends_a_user_if_they_have_exceeded_the_allowed_failed_login_attempts() {
+        let helper = test_helper::Helper::new().await.unwrap();
+        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let (name, email, password) = test_helper::fake_credentials();
+        let hashed_password = controller::password::hash_password(&password).unwrap();
+        let request_data = model::FullRequest::new(&name, &email, &hashed_password);
+        helper.add_credentials(&request_data).await;
+        let data = model::EmailRequest::new(&email, &password);
+        let stored_credentials = helper
+            .get_credentials_by_name(&name)
+            .await
+            .unwrap()
+            .unwrap();
+        helper
+            .set_login_attempts(&stored_credentials.id, &(ALLOWED_FAILED_LOGIN_ATTEMPTS + 1))
+            .await;
+        let (req, mut payload) = test::TestRequest::delete().set_json(&data).to_http_parts();
+        let json = web::Json::<model::EmailRequest>::from_request(&req, &mut payload)
+            .await
+            .unwrap();
+        let resp = delete_credentials(request_state, json).await;
+        helper.delete_credentials_by_name(&name).await;
+        assert_eq!(resp.status(), status_codes::UNAUTHORIZED);
+    }
 
     #[actix_rt::test]
-    async fn deletes_the_login_history_once_a_user_has_been_suspended() {}
+    async fn deletes_the_login_history_once_a_user_has_been_suspended() {
+        let helper = test_helper::Helper::new().await.unwrap();
+        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let (name, email, password) = test_helper::fake_credentials();
+        let hashed_password = controller::password::hash_password(&password).unwrap();
+        let request_data = model::FullRequest::new(&name, &email, &hashed_password);
+        helper.add_credentials(&request_data).await;
+        let data = model::EmailRequest::new(&email, &password);
+        let stored_credentials = helper
+            .get_credentials_by_name(&name)
+            .await
+            .unwrap()
+            .unwrap();
+        helper
+            .set_login_attempts(&stored_credentials.id, &(ALLOWED_FAILED_LOGIN_ATTEMPTS + 1))
+            .await;
+        let (req, mut payload) = test::TestRequest::delete().set_json(&data).to_http_parts();
+        let json = web::Json::<model::EmailRequest>::from_request(&req, &mut payload)
+            .await
+            .unwrap();
+        let resp = delete_credentials(request_state, json).await;
+        helper.delete_credentials_by_name(&name).await;
+        assert_eq!(resp.status(), status_codes::UNAUTHORIZED);
+    }
 
     #[actix_rt::test]
-    async fn deletes_the_failed_login_history_if_a_user_successfully_logs_in() {}
+    async fn deletes_the_failed_login_history_if_a_user_successfully_logs_in() {
+        let helper = test_helper::Helper::new().await.unwrap();
+        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let (name, email, password) = test_helper::fake_credentials();
+        let hashed_password = controller::password::hash_password(&password).unwrap();
+        let request_data = model::FullRequest::new(&name, &email, &hashed_password);
+        helper.add_credentials(&request_data).await;
+        let data = model::EmailRequest::new(&email, &password);
+        let stored_credentials = helper
+            .get_credentials_by_name(&name)
+            .await
+            .unwrap()
+            .unwrap();
+        helper
+            .set_login_attempts(&stored_credentials.id, &(ALLOWED_FAILED_LOGIN_ATTEMPTS - 1))
+            .await;
+        let (req, mut payload) = test::TestRequest::delete().set_json(&data).to_http_parts();
+        let json = web::Json::<model::EmailRequest>::from_request(&req, &mut payload)
+            .await
+            .unwrap();
+        let resp = delete_credentials(request_state, json).await;
+        let login_history = helper
+            .get_login_history(&stored_credentials.id)
+            .await
+            .unwrap();
+        helper.delete_credentials_by_name(&name).await;
+        assert_eq!(login_history.len(), 0);
+    }
 
     #[actix_rt::test]
-    async fn creates_a_log_of_failed_login_attempts() {}
+    async fn creates_a_log_of_failed_login_attempts() {
+        let helper = test_helper::Helper::new().await.unwrap();
+        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let (name, email, password) = test_helper::fake_credentials();
+        let hashed_password = controller::password::hash_password(&password).unwrap();
+        let request_data = model::FullRequest::new(&name, &email, &hashed_password);
+        helper.add_credentials(&request_data).await;
+        let data = model::EmailRequest::new(&email, "incorrect password");
+        let stored_credentials = helper
+            .get_credentials_by_name(&name)
+            .await
+            .unwrap()
+            .unwrap();
+        let (req, mut payload) = test::TestRequest::delete().set_json(&data).to_http_parts();
+        let json = web::Json::<model::EmailRequest>::from_request(&req, &mut payload)
+            .await
+            .unwrap();
+        let resp = delete_credentials(request_state, json).await;
+        let login_history = helper
+            .get_login_history(&stored_credentials.id)
+            .await
+            .unwrap();
+        helper.delete_credentials_by_name(&name).await;
+        assert_eq!(login_history.len(), 1);
+    }
 }

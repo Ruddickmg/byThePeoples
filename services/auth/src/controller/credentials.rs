@@ -2,8 +2,8 @@ use crate::{controller::password, model, repository, Error};
 
 pub enum SaveResults {
     WeakPassword(password::PasswordIssues),
+    Success(model::Credentials),
     Conflict,
-    Saved(model::Credentials),
 }
 
 pub async fn create(
@@ -31,7 +31,7 @@ pub async fn create(
         {
             credentials.save_credentials(&encrypted_credentials).await?;
             match credentials.by_name(&name).await? {
-                Some(stored_credentials) => Ok(SaveResults::Saved(stored_credentials)),
+                Some(stored_credentials) => Ok(SaveResults::Success(stored_credentials)),
                 None => Err(Error::DatabaseError(database::Error::Error(String::from(
                     "Could not retrieve credentials after save",
                 )))),
