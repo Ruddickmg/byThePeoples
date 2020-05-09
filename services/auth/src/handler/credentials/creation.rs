@@ -1,4 +1,5 @@
 use crate::{
+    constants::SUSPENDED_ACCOUNT_MESSAGE,
     controller::{credentials, jwt},
     model,
 };
@@ -19,7 +20,7 @@ pub async fn save_credentials(
                     HttpResponse::InternalServerError().finish()
                 }
             }
-            credentials::SaveResults::Saved(stored_credentials) => {
+            credentials::SaveResults::Success(stored_credentials) => {
                 if let Ok(response) = jwt::set_token(HttpResponse::Created(), stored_credentials) {
                     response
                 } else {
@@ -37,7 +38,6 @@ mod credentials_handler_tests {
     use super::*;
     use crate::{model, utilities::test as test_helper};
     use actix_web::{http, test, FromRequest};
-    use std::intrinsics::prefetch_read_instruction;
 
     const WEAK_PASSWORD: &str = "password";
 

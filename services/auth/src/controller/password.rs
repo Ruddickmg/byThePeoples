@@ -18,9 +18,9 @@ impl fmt::Display for Strength {
             f,
             "{}",
             match self {
-                Strength::Strong => "Password strength is strong",
-                Strength::Moderate => "Password strength is moderate",
-                Strength::Weak(_) => "Password strength is weak",
+                Strength::Strong => "Strong",
+                Strength::Moderate => "Moderate",
+                Strength::Weak(_) => "Weak",
             }
         )
     }
@@ -66,10 +66,7 @@ pub fn strength(name: &str, email: &str, password: &str) -> Result<Strength, Err
         0..=2 => Strength::Weak(match result.feedback() {
             Some(message) => PasswordIssues {
                 message: String::from(WEAK_PASSWORD_MESSAGE),
-                warning: match message.warning() {
-                    Some(warning) => Some(warning.to_string()),
-                    None => None,
-                },
+                warning: message.warning().map(|warning| warning.to_string()),
                 suggestions: message
                     .suggestions()
                     .iter()

@@ -1,6 +1,7 @@
 use serde::export::Formatter;
 
 mod configuration;
+mod constants;
 pub mod controller;
 mod handler;
 pub mod model;
@@ -29,6 +30,7 @@ pub enum Error {
     InternalServerError(InternalServerError),
     Unauthorized(argonautica::Error),
     PasswordError(zxcvbn::ZxcvbnError),
+    SystemTimeError(std::time::SystemTimeError),
     BadRequest(String),
 }
 
@@ -40,7 +42,14 @@ impl std::fmt::Display for Error {
             Error::Unauthorized(error) => write!(f, "{}", error),
             Error::BadRequest(message) => write!(f, "{}", message),
             Error::PasswordError(error) => write!(f, "{}", error),
+            Error::SystemTimeError(error) => write!(f, "{}", error),
         }
+    }
+}
+
+impl From<std::time::SystemTimeError> for Error {
+    fn from(error: std::time::SystemTimeError) -> Error {
+        Error::SystemTimeError(error)
     }
 }
 

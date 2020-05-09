@@ -1,11 +1,13 @@
 use crate::{configuration::database as config, Error};
 use std::env;
 
-pub(crate) mod credentials;
+pub mod credentials;
+mod failed_login;
 mod request;
 
 pub use credentials::*;
 pub use database::Database;
+pub use failed_login::*;
 pub use request::*;
 
 pub struct ServiceState {
@@ -24,7 +26,7 @@ impl ServiceState {
                 env::current_dir().unwrap().to_str().unwrap()
             );
             self.db.migrate(&path_to_migrations).await?;
-            print!("Migration Successful.\n");
+            println!("Migration Successful.\n");
         }
         Ok(self)
     }

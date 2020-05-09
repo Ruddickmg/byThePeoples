@@ -12,17 +12,14 @@ pub async fn update(
     let model::UpdateCredentials {
         auth,
         credentials: updates,
-    }: model::UpdateCredentials = update_credentials;
+    } = update_credentials;
     if let Ok(status) = credentials::update(&state.db, &auth, &updates).await {
         match status {
             credentials::UpdateResults::Success(credentials) => {
-                match jwt::set_token(HttpResponse::Ok(), credentials) {
-                    Ok(authenticated_response) => authenticated_response,
-                    Err(_) => HttpResponse::InternalServerError().finish(),
-                }
+                jwt::set_token(HttpResponse::Ok(), credentials)
+                    .unwrap_or(HttpResponse::InternalServerError().finish())
             }
-            credentials::UpdateResults::Unauthorized => HttpResponse::Unauthorized().finish(),
-            credentials::UpdateResults::NotFound => HttpResponse::NotFound().finish(),
+            _ => HttpResponse::Unauthorized().finish(),
         }
     } else {
         HttpResponse::InternalServerError().finish()
@@ -32,8 +29,16 @@ pub async fn update(
 #[cfg(test)]
 mod update_credentials_test {
     use super::*;
-    use crate::{controller, model, utilities::test as test_helper};
+    use crate::{
+        configuration::{ACCOUNT_LOCK_DURATION_IN_SECONDS, ALLOWED_FAILED_LOGIN_ATTEMPTS},
+        controller, model,
+        utilities::test as test_helper,
+    };
     use actix_web::{http, test, FromRequest};
+    use std::{
+        ops::Sub,
+        time::{Duration, SystemTime},
+    };
 
     #[actix_rt::test]
     async fn returns_okay_if_the_update_was_successful() {
@@ -221,7 +226,7 @@ mod update_credentials_test {
     }
 
     #[actix_rt::test]
-    async fn returns_not_found_if_no_associated_record_exists() {
+    async fn returns_unauthorized_if_no_associated_record_exists() {
         let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
         let helper = test_helper::Helper::new().await.unwrap();
         let (_name, email, password) = test_helper::fake_credentials();
@@ -233,7 +238,7 @@ mod update_credentials_test {
             .await
             .unwrap();
         let resp = update(request_state, json).await;
-        assert_eq!(resp.status(), status_codes::NOT_FOUND);
+        assert_eq!(resp.status(), status_codes::UNAUTHORIZED);
     }
 
     #[actix_rt::test]
@@ -249,5 +254,210 @@ mod update_credentials_test {
             .unwrap();
         let resp = update(request_state, json).await;
         assert!(!resp.headers().contains_key(http::header::AUTHORIZATION));
+    }
+
+    #[actix_rt::test]
+    async fn returns_unauthorized_if_a_user_has_been_suspended() {
+        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let helper = test_helper::Helper::new().await.unwrap();
+        let (name, email, password) = test_helper::fake_credentials();
+        let hashed_password = controller::password::hash_password(&password).unwrap();
+        let auth_credentials = model::EmailRequest::new(&email, &password);
+        let update_credentials = model::CredentialsRequest::new(&None, &None, &None);
+        let data = model::UpdateCredentials::new(&auth_credentials, &update_credentials);
+        helper
+            .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+            .await;
+        let stored_credentials = helper
+            .get_credentials_by_name(&name)
+            .await
+            .unwrap()
+            .unwrap();
+        helper.suspend_user(&stored_credentials.id).await;
+        let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
+        let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+            .await
+            .unwrap();
+        let resp = update(request_state, json).await;
+        helper.delete_credentials_by_name(&name).await;
+        assert_eq!(resp.status(), status_codes::UNAUTHORIZED);
+    }
+
+    #[actix_rt::test]
+    async fn suspends_a_user_if_they_have_exceeded_the_allowed_failed_update_attempts() {
+        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let helper = test_helper::Helper::new().await.unwrap();
+        let (name, email, password) = test_helper::fake_credentials();
+        let hashed_password = controller::password::hash_password(&password).unwrap();
+        let auth_credentials = model::EmailRequest::new(&email, "Invalid Password");
+        let update_credentials = model::CredentialsRequest::new(&None, &None, &None);
+        let data = model::UpdateCredentials::new(&auth_credentials, &update_credentials);
+        helper
+            .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+            .await;
+        let stored_credentials = helper
+            .get_credentials_by_name(&name)
+            .await
+            .unwrap()
+            .unwrap();
+        helper
+            .set_login_attempts(&stored_credentials.id, &(ALLOWED_FAILED_LOGIN_ATTEMPTS + 1))
+            .await;
+        let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
+        let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+            .await
+            .unwrap();
+        update(request_state, json).await;
+        let user_credentials = helper
+            .get_credentials_by_name(&name)
+            .await
+            .unwrap()
+            .unwrap();
+        helper.delete_credentials_by_name(&name).await;
+        assert_ne!(user_credentials.locked_at, None);
+    }
+
+    #[actix_rt::test]
+    async fn deletes_the_login_history_once_a_user_has_been_suspended() {
+        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let helper = test_helper::Helper::new().await.unwrap();
+        let (name, email, password) = test_helper::fake_credentials();
+        let hashed_password = controller::password::hash_password(&password).unwrap();
+        let auth_credentials = model::EmailRequest::new(&email, "Invalid Password");
+        let update_credentials = model::CredentialsRequest::new(&None, &None, &None);
+        let data = model::UpdateCredentials::new(&auth_credentials, &update_credentials);
+        helper
+            .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+            .await;
+        let stored_credentials = helper
+            .get_credentials_by_name(&name)
+            .await
+            .unwrap()
+            .unwrap();
+        helper
+            .set_login_attempts(&stored_credentials.id, &(ALLOWED_FAILED_LOGIN_ATTEMPTS + 1))
+            .await;
+        let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
+        let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+            .await
+            .unwrap();
+        update(request_state, json).await;
+        let login_history = helper
+            .get_login_history(&stored_credentials.id)
+            .await
+            .unwrap();
+        helper.delete_credentials_by_name(&name).await;
+        assert_eq!(login_history.len(), 0);
+    }
+
+    #[actix_rt::test]
+    async fn deletes_login_history_if_previous_update_failures_are_expired() {
+        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let helper = test_helper::Helper::new().await.unwrap();
+        let (name, email, password) = test_helper::fake_credentials();
+        let hashed_password = controller::password::hash_password(&password).unwrap();
+        let auth_credentials = model::EmailRequest::new(&email, "Invalid Password");
+        let update_credentials = model::CredentialsRequest::new(&None, &None, &None);
+        let data = model::UpdateCredentials::new(&auth_credentials, &update_credentials);
+        helper
+            .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+            .await;
+        let stored_credentials = helper
+            .get_credentials_by_name(&name)
+            .await
+            .unwrap()
+            .unwrap();
+        let expired_timestamp =
+            SystemTime::now().sub(Duration::from_secs(ACCOUNT_LOCK_DURATION_IN_SECONDS + 1));
+        helper
+            .set_login_history(&model::FailedLogin {
+                user_id: stored_credentials.id,
+                updated_at: expired_timestamp,
+                created_at: expired_timestamp,
+                attempts: ALLOWED_FAILED_LOGIN_ATTEMPTS,
+            })
+            .await;
+        let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
+        let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+            .await
+            .unwrap();
+        update(request_state, json).await;
+        let login_history = helper
+            .get_login_history(&stored_credentials.id)
+            .await
+            .unwrap();
+        helper.delete_credentials_by_name(&name).await;
+        assert_eq!(login_history.len(), 0);
+    }
+
+    #[actix_rt::test]
+    async fn does_not_suspend_user_if_previous_update_failures_are_expired() {
+        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let helper = test_helper::Helper::new().await.unwrap();
+        let (name, email, password) = test_helper::fake_credentials();
+        let hashed_password = controller::password::hash_password(&password).unwrap();
+        let auth_credentials = model::EmailRequest::new(&email, "Invalid Password");
+        let update_credentials = model::CredentialsRequest::new(&None, &None, &None);
+        let data = model::UpdateCredentials::new(&auth_credentials, &update_credentials);
+        helper
+            .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+            .await;
+        let stored_credentials = helper
+            .get_credentials_by_name(&name)
+            .await
+            .unwrap()
+            .unwrap();
+        let expired_timestamp =
+            SystemTime::now().sub(Duration::from_secs(ACCOUNT_LOCK_DURATION_IN_SECONDS + 1));
+        helper
+            .set_login_history(&model::FailedLogin {
+                user_id: stored_credentials.id,
+                updated_at: expired_timestamp,
+                created_at: expired_timestamp,
+                attempts: ALLOWED_FAILED_LOGIN_ATTEMPTS,
+            })
+            .await;
+        let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
+        let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+            .await
+            .unwrap();
+        update(request_state, json).await;
+        let user_credentials = helper
+            .get_credentials_by_name(&name)
+            .await
+            .unwrap()
+            .unwrap();
+        helper.delete_credentials_by_name(&name).await;
+        assert_eq!(user_credentials.locked_at, None);
+    }
+
+    #[actix_rt::test]
+    async fn creates_a_log_of_failed_login_attempts() {
+        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let helper = test_helper::Helper::new().await.unwrap();
+        let (name, email, password) = test_helper::fake_credentials();
+        let hashed_password = controller::password::hash_password(&password).unwrap();
+        let auth_credentials = model::EmailRequest::new(&email, "Invalid Password");
+        let update_credentials = model::CredentialsRequest::new(&None, &None, &None);
+        let data = model::UpdateCredentials::new(&auth_credentials, &update_credentials);
+        helper
+            .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+            .await;
+        let stored_credentials = helper
+            .get_credentials_by_name(&name)
+            .await
+            .unwrap()
+            .unwrap();
+        let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
+        let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+            .await
+            .unwrap();
+        let resp = update(request_state, json).await;
+        let login_history = helper
+            .get_login_history(&stored_credentials.id)
+            .await
+            .unwrap();
+        helper.delete_credentials_by_name(&name).await;
+        assert_eq!(login_history.len(), 1);
     }
 }
