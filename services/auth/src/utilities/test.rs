@@ -9,7 +9,7 @@ use fake::Fake;
 const CREATE_OR_UPDATE_FAILED_LOGIN: &str = "INSERT INTO auth.failed_login(user_id, attempts, updated_at) VALUES ($1, $2, CURRENT_TIMESTAMP);";
 const GET_FAILED_LOGIN_HISTORY: &str =
     "SELECT user_id, attempts, created_at, updated_at FROM auth.failed_login WHERE user_id = $1;";
-
+const CREATE_FAILED_LOGIN: &str = "INSERT INTO auth.failed_login(user_id, created_at, updated_at, attempts) VALUES ($1, $2, $3, $4);";
 const MAX_FAKE_PASSWORD_LENGTH: usize = 20;
 const MIN_FAKE_PASSWORD_LENGTH: usize = 15;
 
@@ -81,6 +81,24 @@ impl Helper {
             .await
             .unwrap()
             .execute(CREATE_OR_UPDATE_FAILED_LOGIN, &[&user_id, &attempts])
+            .await
+            .unwrap();
+    }
+    pub async fn set_login_history(&self, failed_login_record: &model::FailedLogin) {
+        let db = &self.state.db;
+        let model::FailedLogin {
+            user_id,
+            updated_at,
+            created_at,
+            attempts,
+        } = failed_login_record;
+        db.client()
+            .await
+            .unwrap()
+            .execute(
+                CREATE_FAILED_LOGIN,
+                &[&user_id, &updated_at, &created_at, &attempts],
+            )
             .await
             .unwrap();
     }

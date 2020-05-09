@@ -6,10 +6,10 @@ use crate::{
 use std::time::Duration;
 
 pub struct FailedLogin {
-    user_id: CredentialId,
-    updated_at: database::Timestamp,
-    created_at: database::Timestamp,
-    attempts: database::SmallInt,
+    pub user_id: CredentialId,
+    pub updated_at: database::Timestamp,
+    pub created_at: database::Timestamp,
+    pub attempts: database::SmallInt,
 }
 
 impl FailedLogin {

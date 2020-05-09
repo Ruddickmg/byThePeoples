@@ -26,7 +26,7 @@ impl ServiceState {
                 env::current_dir().unwrap().to_str().unwrap()
             );
             self.db.migrate(&path_to_migrations).await?;
-            print!("Migration Successful.\n");
+            println!("Migration Successful.\n");
         }
         Ok(self)
     }
