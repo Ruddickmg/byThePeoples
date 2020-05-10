@@ -13,7 +13,9 @@ pub async fn update_credentials<T: model::Database>(
         auth,
         credentials: updates,
     } = updated_credentials;
-    if let Ok(status) = credentials::update(&state.db, &auth, &updates).await {
+    if let Ok(status) =
+        credentials::update(&state.credentials, &state.login_history, &auth, &updates).await
+    {
         match status {
             credentials::UpdateResults::Success(credentials) => {
                 jwt::set_token(HttpResponse::Ok(), credentials)

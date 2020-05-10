@@ -56,7 +56,7 @@ impl From<database::Row> for Credentials {
 }
 
 pub struct DeletedAt {
-    deleted_at: Option<database::TimeStamp>,
+    pub deleted_at: Option<database::TimeStamp>,
 }
 
 impl From<database::Row> for DeletedAt {
@@ -68,7 +68,7 @@ impl From<database::Row> for DeletedAt {
 }
 
 pub struct AffectedRows {
-    count: Option<i32>,
+    pub count: i32,
 }
 
 impl From<database::Row> for AffectedRows {

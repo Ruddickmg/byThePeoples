@@ -6,7 +6,7 @@ pub async fn delete_credentials<T: model::Database>(
     json: web::Json<model::EmailRequest>,
 ) -> HttpResponse {
     let user_credentials = model::EmailRequest::from(json);
-    match credentials::delete(&state.db, user_credentials).await {
+    match credentials::delete(&state.credentials, &state.login_history, &user_credentials).await {
         Ok(deletion) => match deletion {
             credentials::DeleteResults::Success => HttpResponse::Accepted(),
             _ => HttpResponse::Unauthorized(),

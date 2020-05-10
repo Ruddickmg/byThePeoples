@@ -7,23 +7,22 @@ pub enum SaveResults {
 }
 
 pub async fn create<T: model::Database>(
-    db: &T,
-    model::FullRequest {
+    credentials: &repository::Credentials<T>,
+    request: &model::FullRequest,
+) -> Result<SaveResults, Error> {
+    let model::FullRequest {
         name,
         email,
         password,
-    }: model::FullRequest,
-) -> Result<SaveResults, Error> {
-    let password_strength = password::strength(&name, &email, &password)?;
+    }: &model::FullRequest = request;
+    let password_strength = password::strength(name, email, password)?;
     if let password::Strength::Weak(problems) = password_strength {
         Ok(SaveResults::WeakPassword(problems))
     } else {
-        let client = db.client().await?;
-        let mut credentials = repository::Credentials::new(&client);
         let hash = password::hash_password(&password)?;
         let encrypted_credentials = model::FullRequest {
-            name: String::from(&name),
-            email: String::from(&email),
+            name: String::from(name),
+            email: String::from(email),
             password: String::from(&hash),
         };
         if let repository::credentials::Status::None =
@@ -50,12 +49,11 @@ pub enum DeleteResults {
 }
 
 pub async fn delete<T: model::Database>(
-    db: &T,
-    model::EmailRequest { password, email }: model::EmailRequest,
+    credentials: &repository::Credentials<T>,
+    login_history: &repository::LoginHistory<T>,
+    request: &model::EmailRequest,
 ) -> Result<DeleteResults, Error> {
-    let client = db.client().await?;
-    let mut credentials = repository::Credentials::new(&client);
-    let failed_login = repository::FailedLogin::new(&client);
+    let model::EmailRequest { password, email }: &model::EmailRequest = request;
     if let Some(stored_credentials) = credentials.by_email(&email).await? {
         if stored_credentials.suspended()? {
             Ok(DeleteResults::Suspended)
@@ -64,7 +62,7 @@ pub async fn delete<T: model::Database>(
                 credentials.mark_as_deleted_by_email(&email).await?;
                 Ok(DeleteResults::Success)
             } else {
-                failed_login.suspend(&stored_credentials.id).await?;
+                login_history.suspend(&stored_credentials.id).await?;
                 Ok(DeleteResults::Unauthorized)
             }
         }
@@ -81,17 +79,16 @@ pub enum UpdateResults {
 }
 
 pub async fn update<T: model::Database>(
-    db: &T,
+    credentials: &repository::Credentials<T>,
+    login_history: &repository::LoginHistory<T>,
     auth_details: &model::EmailRequest,
-    model::CredentialsRequest {
+    request: &model::CredentialsRequest,
+) -> Result<UpdateResults, Error> {
+    let model::CredentialsRequest {
         name,
         email,
         password,
-    }: &model::CredentialsRequest,
-) -> Result<UpdateResults, Error> {
-    let client = db.client().await?;
-    let mut credentials = repository::Credentials::new(&client);
-    let failed_login = repository::FailedLogin::new(&client);
+    }: &model::CredentialsRequest = request;
     if let Some(stored_credentials) = credentials.by_email(&auth_details.email).await? {
         if stored_credentials.suspended()? {
             Ok(UpdateResults::Suspended)
@@ -112,7 +109,7 @@ pub async fn update<T: model::Database>(
                     .await?;
                 Ok(UpdateResults::Success(updated_credentials))
             } else {
-                failed_login.suspend(&stored_credentials.id).await?;
+                login_history.suspend(&stored_credentials.id).await?;
                 Ok(UpdateResults::Unauthorized)
             }
         }

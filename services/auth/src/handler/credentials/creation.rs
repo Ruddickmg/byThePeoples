@@ -9,7 +9,7 @@ pub async fn save_credentials<T: model::Database>(
     json: web::Json<model::FullRequest>,
 ) -> HttpResponse {
     let user_credentials = model::FullRequest::from(json);
-    if let Ok(result) = credentials::create(&state.db, user_credentials).await {
+    if let Ok(result) = credentials::create(&state.credentials, &user_credentials).await {
         match result {
             credentials::SaveResults::Conflict => HttpResponse::Conflict().finish(),
             credentials::SaveResults::WeakPassword(problems) => {

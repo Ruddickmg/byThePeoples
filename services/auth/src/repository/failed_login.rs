@@ -12,32 +12,35 @@ const CREATE_OR_UPDATE_FAILED_LOGIN: &str = "INSERT INTO auth.failed_login(user_
 RETURNING user_id, attempts, created_at, updated_at;";
 const DELETE_FAILED_LOGIN_RECORD: &str = "DELETE FROM auth.failed_login WHERE user_id = $1";
 
-pub struct FailedLogin<'a, T: model::Client<'a>> {
-    client: &'a T,
+#[derive(Clone)]
+pub struct LoginHistory<T: model::Database> {
+    db: T,
 }
 
-impl<'a, T: model::Client<'a>> FailedLogin<'a, T> {
-    pub fn new(client: &'a T) -> FailedLogin<'a, T> {
-        FailedLogin { client }
+impl<T: model::Database> LoginHistory<T> {
+    pub fn new(db: T) -> LoginHistory<T> {
+        LoginHistory { db }
     }
     pub async fn log(&self, id: &model::CredentialId) -> Result<model::FailedLogin, Error> {
-        let stmt = self.client.prepare(CREATE_OR_UPDATE_FAILED_LOGIN).await?;
-        Ok(self
-            .client
+        let client = self.db.client().await?;
+        let stmt = client.prepare(CREATE_OR_UPDATE_FAILED_LOGIN).await?;
+        Ok(client
             .query::<model::FailedLogin>(&stmt, &[&id])
             .await?
             .remove(0))
     }
     pub async fn get(&self, id: &model::CredentialId) -> Result<model::FailedLogin, Error> {
-        let stmt = self.client.prepare(GET_FAILED_LOGIN).await?;
-        Ok(self
-            .client
+        let client = self.db.client().await?;
+        let stmt = client.prepare(GET_FAILED_LOGIN).await?;
+        Ok(client
             .query::<model::FailedLogin>(&stmt, &[&id])
             .await?
             .remove(0))
     }
     pub async fn delete(&self, id: &model::CredentialId) -> Result<(), Error> {
-        self.client
+        self.db
+            .client()
+            .await?
             .execute(DELETE_FAILED_LOGIN_RECORD, &[&id])
             .await?;
         Ok(())
@@ -49,9 +52,11 @@ impl<'a, T: model::Client<'a>> FailedLogin<'a, T> {
             if failed_logins.expired()? {
                 reset.await?;
             } else {
-                join(
+                let (..) = join(
                     reset,
-                    self.client
+                    self.db
+                        .client()
+                        .await?
                         .execute(credentials::query::SUSPEND, &[&user_id]),
                 )
                 .await;

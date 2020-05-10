@@ -9,7 +9,9 @@ pub async fn authenticate_credentials<T: model::Database>(
     json: web::Json<model::NameRequest>,
 ) -> HttpResponse {
     let user_credentials = model::NameRequest::from(json);
-    match authorization::authorize(&user_credentials, &state.db).await {
+    match authorization::authorize(&user_credentials, &state.credentials, &state.login_history)
+        .await
+    {
         Ok(stored_credentials) => match stored_credentials {
             authorization::Results::Valid(credentials) => {
                 match jwt::set_token(HttpResponse::Ok(), credentials) {

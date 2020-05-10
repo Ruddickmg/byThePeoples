@@ -38,7 +38,7 @@ impl ConnectionPool {
 }
 
 #[async_trait]
-pub trait ConnectionPoolTrait {
+pub trait ConnectionPoolTrait: Clone {
     async fn client(&self) -> Result<client::Client<'_>>;
     async fn migrate(&self, path: &str) -> Result<()>;
 }
