@@ -1,5 +1,4 @@
 use crate::{controller::password, model, repository, Error};
-use futures::future::join;
 
 pub enum Results {
     Valid(model::Credentials),
@@ -8,9 +7,9 @@ pub enum Results {
     None,
 }
 
-pub async fn authorize(
+pub async fn authorize<T: model::Database>(
     user_credentials: &model::NameRequest,
-    db: &model::Database,
+    db: &T,
 ) -> Result<Results, Error> {
     let client = db.client().await?;
     let mut auth_credentials = repository::Credentials::new(&client);

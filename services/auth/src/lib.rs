@@ -1,6 +1,6 @@
 use serde::export::Formatter;
 
-mod configuration;
+pub mod configuration;
 mod constants;
 pub mod controller;
 mod handler;

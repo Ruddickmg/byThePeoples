@@ -1,12 +1,11 @@
 use crate::{
-    constants::SUSPENDED_ACCOUNT_MESSAGE,
     controller::{credentials, jwt},
     model,
 };
 use actix_web::{web, HttpResponse};
 
-pub async fn save_credentials(
-    state: web::Data<model::ServiceState>,
+pub async fn save_credentials<T: model::Database>(
+    state: web::Data<model::ServiceState<T>>,
     json: web::Json<model::FullRequest>,
 ) -> HttpResponse {
     let user_credentials = model::FullRequest::from(json);
@@ -36,7 +35,9 @@ pub async fn save_credentials(
 #[cfg(test)]
 mod credentials_handler_tests {
     use super::*;
-    use crate::{model, utilities::test as test_helper};
+    use crate::{
+        configuration::database::TEST_DATABASE_CONFIG, model, utilities::test as test_helper,
+    };
     use actix_web::{http, test, FromRequest};
 
     const WEAK_PASSWORD: &str = "password";
@@ -44,7 +45,10 @@ mod credentials_handler_tests {
     #[actix_rt::test]
     async fn save_credentials_success_status() {
         let helper = test_helper::Helper::new().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+            .await
+            .unwrap();
+        let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
         let (name, email, password) = test_helper::fake_credentials();
         let request_data = model::FullRequest::new(&name, &email, &password);
         let (req, mut payload) = test::TestRequest::post()
@@ -61,7 +65,10 @@ mod credentials_handler_tests {
     #[actix_rt::test]
     async fn save_credentials_creates_record() {
         let helper = test_helper::Helper::new().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+            .await
+            .unwrap();
+        let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
         let (name, email, password) = test_helper::fake_credentials();
         let request_data = model::FullRequest::new(&name, &email, &password);
         let (req, mut payload) = test::TestRequest::post()
@@ -84,7 +91,10 @@ mod credentials_handler_tests {
     #[actix_rt::test]
     async fn save_credentials_sets_auth_token() {
         let helper = test_helper::Helper::new().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+            .await
+            .unwrap();
+        let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
         let (name, email, password) = test_helper::fake_credentials();
         let request_data = model::FullRequest::new(&name, &email, &password);
         let (req, mut payload) = test::TestRequest::post()
@@ -101,7 +111,10 @@ mod credentials_handler_tests {
     #[actix_rt::test]
     async fn returns_conflict_if_email_exists() {
         let helper = test_helper::Helper::new().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+            .await
+            .unwrap();
+        let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
         let (name, email, password) = test_helper::fake_credentials();
         let mut request_data = model::FullRequest::new(&name, &email, &password);
         helper.add_credentials(&request_data).await;
@@ -120,7 +133,10 @@ mod credentials_handler_tests {
     #[actix_rt::test]
     async fn does_not_set_auth_token_if_email_exists() {
         let helper = test_helper::Helper::new().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+            .await
+            .unwrap();
+        let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
         let (name, email, password) = test_helper::fake_credentials();
         let mut request_data = model::FullRequest::new(&name, &email, &password);
         helper.add_credentials(&request_data).await;
@@ -139,7 +155,10 @@ mod credentials_handler_tests {
     #[actix_rt::test]
     async fn returns_conflict_if_name_exists() {
         let helper = test_helper::Helper::new().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+            .await
+            .unwrap();
+        let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
         let (name, email, password) = test_helper::fake_credentials();
         let mut request_data = model::FullRequest::new(&name, &email, &password);
         helper.add_credentials(&request_data).await;
@@ -158,7 +177,10 @@ mod credentials_handler_tests {
     #[actix_rt::test]
     async fn does_not_set_auth_token_if_name_exists() {
         let helper = test_helper::Helper::new().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+            .await
+            .unwrap();
+        let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
         let (name, email, password) = test_helper::fake_credentials();
         let mut request_data = model::FullRequest::new(&name, &email, &password);
         helper.add_credentials(&request_data).await;
@@ -176,7 +198,10 @@ mod credentials_handler_tests {
 
     #[actix_rt::test]
     async fn returns_forbidden_if_password_is_too_weak() {
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+            .await
+            .unwrap();
+        let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
         let (name, email, ..) = test_helper::fake_credentials();
         let request_data = model::FullRequest::new(&name, &email, WEAK_PASSWORD);
         let (req, mut payload) = test::TestRequest::post()
@@ -189,11 +214,12 @@ mod credentials_handler_tests {
         assert_eq!(resp.status(), status_codes::FORBIDDEN);
     }
 
-    // TODO test for weak password message body
-
     #[actix_rt::test]
     async fn does_not_set_auth_token_if_password_is_too_weak() {
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+            .await
+            .unwrap();
+        let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
         let (name, email, ..) = test_helper::fake_credentials();
         let request_data = model::FullRequest::new(&name, &email, WEAK_PASSWORD);
         let (req, mut payload) = test::TestRequest::post()

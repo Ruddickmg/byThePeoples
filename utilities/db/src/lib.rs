@@ -6,7 +6,7 @@ use std::{fmt::Display, io};
 use tokio_postgres;
 
 mod client;
-mod configuration;
+pub mod configuration;
 mod connection_pool;
 mod transaction;
 
@@ -18,7 +18,8 @@ pub type SmallInt = i16;
 
 pub use client::Client;
 pub use configuration::Configuration;
-pub use connection_pool::ConnectionPool as Database;
+pub use connection_pool::ConnectionPool;
+pub use connection_pool::ConnectionPoolTrait as Database;
 pub use std::time::SystemTime as TimeStamp;
 pub use tokio_postgres::Statement;
 pub use transaction::Transaction;

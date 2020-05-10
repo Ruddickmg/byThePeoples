@@ -6,8 +6,8 @@ pub enum SaveResults {
     Conflict,
 }
 
-pub async fn create(
-    db: &model::Database,
+pub async fn create<T: model::Database>(
+    db: &T,
     model::FullRequest {
         name,
         email,
@@ -49,8 +49,8 @@ pub enum DeleteResults {
     Unauthorized,
 }
 
-pub async fn delete(
-    db: &model::Database,
+pub async fn delete<T: model::Database>(
+    db: &T,
     model::EmailRequest { password, email }: model::EmailRequest,
 ) -> Result<DeleteResults, Error> {
     let client = db.client().await?;
@@ -80,8 +80,8 @@ pub enum UpdateResults {
     Unauthorized,
 }
 
-pub async fn update(
-    db: &model::Database,
+pub async fn update<T: model::Database>(
+    db: &T,
     auth_details: &model::EmailRequest,
     model::CredentialsRequest {
         name,

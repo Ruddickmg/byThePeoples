@@ -1,25 +1,29 @@
 use crate::{controller::credentials, model};
 use actix_web::{web, HttpResponse};
 
-pub async fn delete_credentials(
-    state: web::Data<model::ServiceState>,
+pub async fn delete_credentials<T: model::Database>(
+    state: web::Data<model::ServiceState<T>>,
     json: web::Json<model::EmailRequest>,
 ) -> HttpResponse {
     let user_credentials = model::EmailRequest::from(json);
     match credentials::delete(&state.db, user_credentials).await {
         Ok(deletion) => match deletion {
-            credentials::DeleteResults::Success => HttpResponse::Accepted().finish(),
-            _ => HttpResponse::Unauthorized().finish(),
+            credentials::DeleteResults::Success => HttpResponse::Accepted(),
+            _ => HttpResponse::Unauthorized(),
         },
-        Err(_) => HttpResponse::InternalServerError().finish(),
+        Err(_) => HttpResponse::InternalServerError(),
     }
+    .finish()
 }
 
 #[cfg(test)]
 mod credential_deletion_test {
     use super::*;
     use crate::{
-        configuration::{ACCOUNT_LOCK_DURATION_IN_SECONDS, ALLOWED_FAILED_LOGIN_ATTEMPTS},
+        configuration::{
+            database::TEST_DATABASE_CONFIG, ACCOUNT_LOCK_DURATION_IN_SECONDS,
+            ALLOWED_FAILED_LOGIN_ATTEMPTS,
+        },
         controller, model,
         utilities::test as test_helper,
     };
@@ -32,7 +36,10 @@ mod credential_deletion_test {
 
     #[actix_rt::test]
     async fn returns_unauthorized_if_no_record_exists() {
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+            .await
+            .unwrap();
+        let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
         let (_name, email, password) = test_helper::fake_credentials();
         let data = model::EmailRequest::new(&email, &password);
         let request = test::TestRequest::delete();
@@ -47,7 +54,10 @@ mod credential_deletion_test {
     #[actix_rt::test]
     async fn returns_unauthorized_if_password_is_invalid() {
         let helper = test_helper::Helper::new().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+            .await
+            .unwrap();
+        let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
         let (name, email, password) = test_helper::fake_credentials();
         let initial_data = model::FullRequest::new(&name, &email, &password);
         helper.add_credentials(&initial_data).await;
@@ -65,7 +75,10 @@ mod credential_deletion_test {
     #[actix_rt::test]
     async fn returns_an_accepted_response_if_deletion_was_successful() {
         let helper = test_helper::Helper::new().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+            .await
+            .unwrap();
+        let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
         let (name, email, password) = test_helper::fake_credentials();
         let hashed_password = controller::password::hash_password(&password).unwrap();
         let request_data = model::FullRequest::new(&name, &email, &hashed_password);
@@ -84,7 +97,10 @@ mod credential_deletion_test {
     #[actix_rt::test]
     async fn sets_deleted_at_timestamp_on_deleted_record() {
         let helper = test_helper::Helper::new().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+            .await
+            .unwrap();
+        let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
         let (name, email, password) = test_helper::fake_credentials();
         let hashed_password = controller::password::hash_password(&password).unwrap();
         let request_data = model::FullRequest::new(&name, &email, &hashed_password);
@@ -107,7 +123,10 @@ mod credential_deletion_test {
     #[actix_rt::test]
     async fn returns_unauthorized_if_a_user_has_been_suspended() {
         let helper = test_helper::Helper::new().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+            .await
+            .unwrap();
+        let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
         let (name, email, password) = test_helper::fake_credentials();
         let hashed_password = controller::password::hash_password(&password).unwrap();
         let request_data = model::FullRequest::new(&name, &email, &hashed_password);
@@ -131,7 +150,10 @@ mod credential_deletion_test {
     #[actix_rt::test]
     async fn suspends_a_user_if_they_have_exceeded_the_allowed_failed_deletion_attempts() {
         let helper = test_helper::Helper::new().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+            .await
+            .unwrap();
+        let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
         let (name, email, password) = test_helper::fake_credentials();
         let hashed_password = controller::password::hash_password(&password).unwrap();
         let request_data = model::FullRequest::new(&name, &email, &hashed_password);
@@ -162,7 +184,10 @@ mod credential_deletion_test {
     #[actix_rt::test]
     async fn deletes_the_login_history_once_a_user_has_been_suspended() {
         let helper = test_helper::Helper::new().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+            .await
+            .unwrap();
+        let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
         let (name, email, password) = test_helper::fake_credentials();
         let hashed_password = controller::password::hash_password(&password).unwrap();
         let request_data = model::FullRequest::new(&name, &email, &hashed_password);
@@ -192,7 +217,10 @@ mod credential_deletion_test {
     #[actix_rt::test]
     async fn deletes_login_history_if_previous_deletion_failures_are_expired() {
         let helper = test_helper::Helper::new().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+            .await
+            .unwrap();
+        let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
         let (name, email, password) = test_helper::fake_credentials();
         let hashed_password = controller::password::hash_password(&password).unwrap();
         let request_data = model::FullRequest::new(&name, &email, &hashed_password);
@@ -229,7 +257,10 @@ mod credential_deletion_test {
     #[actix_rt::test]
     async fn does_not_suspend_user_if_previous_deletion_failures_are_expired() {
         let helper = test_helper::Helper::new().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+            .await
+            .unwrap();
+        let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
         let (name, email, password) = test_helper::fake_credentials();
         let hashed_password = controller::password::hash_password(&password).unwrap();
         let request_data = model::FullRequest::new(&name, &email, &hashed_password);
@@ -267,7 +298,10 @@ mod credential_deletion_test {
     #[actix_rt::test]
     async fn creates_a_log_of_failed_deletion_attempts() {
         let helper = test_helper::Helper::new().await.unwrap();
-        let request_state = web::Data::new(model::ServiceState::new().await.unwrap());
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+            .await
+            .unwrap();
+        let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
         let (name, email, password) = test_helper::fake_credentials();
         let hashed_password = controller::password::hash_password(&password).unwrap();
         let request_data = model::FullRequest::new(&name, &email, &hashed_password);
