@@ -12,12 +12,12 @@ const CREATE_OR_UPDATE_FAILED_LOGIN: &str = "INSERT INTO auth.failed_login(user_
 RETURNING user_id, attempts, created_at, updated_at;";
 const DELETE_FAILED_LOGIN_RECORD: &str = "DELETE FROM auth.failed_login WHERE user_id = $1";
 
-pub struct FailedLogin<'a> {
-    client: &'a database::Client<'a>,
+pub struct FailedLogin<'a, T: model::Client<'a>> {
+    client: &'a T,
 }
 
-impl<'a> FailedLogin<'a> {
-    pub fn new(client: &'a database::Client<'a>) -> FailedLogin {
+impl<'a, T: model::Client<'a>> FailedLogin<'a, T> {
+    pub fn new(client: &'a T) -> FailedLogin<'a, T> {
         FailedLogin { client }
     }
     pub async fn log(&self, id: &model::CredentialId) -> Result<model::FailedLogin, Error> {

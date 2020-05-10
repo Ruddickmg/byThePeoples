@@ -1,4 +1,4 @@
-use crate::{client, configuration, Client, Configuration, Pool, Result};
+use crate::{client, configuration, Configuration, Pool, Result};
 use async_trait::async_trait;
 use std::fs;
 
@@ -22,7 +22,7 @@ impl ConnectionPool {
         }
         Ok(ConnectionPool { pool })
     }
-    pub async fn client(&self) -> Result<Client<'_>> {
+    pub async fn client(&self) -> Result<client::Client<'_>> {
         Ok(client::Client::new(self.pool.get().await?))
     }
     pub async fn migrate(&self, path: &str) -> Result<()> {
@@ -39,13 +39,13 @@ impl ConnectionPool {
 
 #[async_trait]
 pub trait ConnectionPoolTrait {
-    async fn client(&self) -> Result<Client<'_>>;
+    async fn client(&self) -> Result<client::Client<'_>>;
     async fn migrate(&self, path: &str) -> Result<()>;
 }
 
 #[async_trait]
 impl ConnectionPoolTrait for ConnectionPool {
-    async fn client(&self) -> Result<Client<'_>> {
+    async fn client(&self) -> Result<client::Client<'_>> {
         Ok(client::Client::new(self.pool.get().await?))
     }
     async fn migrate(&self, path: &str) -> Result<()> {

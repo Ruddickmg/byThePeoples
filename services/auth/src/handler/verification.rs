@@ -19,7 +19,7 @@ pub async fn authenticate_credentials<T: model::Database>(
             }
             _ => HttpResponse::Unauthorized().finish(),
         },
-        Err(error) => HttpResponse::InternalServerError().finish(),
+        Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
 

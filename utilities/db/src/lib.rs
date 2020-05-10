@@ -16,7 +16,7 @@ pub type Results = Vec<Row>;
 pub type Params<'a> = &'a [&'a (dyn tokio_postgres::types::ToSql + Sync)];
 pub type SmallInt = i16;
 
-pub use client::Client;
+pub use client::ClientTrait as Client;
 pub use configuration::Configuration;
 pub use connection_pool::ConnectionPool;
 pub use connection_pool::ConnectionPoolTrait as Database;

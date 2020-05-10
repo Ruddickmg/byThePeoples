@@ -6,6 +6,7 @@ mod failed_login;
 mod request;
 
 pub use credentials::*;
+pub use database::Client;
 pub use database::ConnectionPool as DatabaseConnection;
 pub use database::Database;
 pub use failed_login::*;
