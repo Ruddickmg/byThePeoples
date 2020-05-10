@@ -1,13 +1,17 @@
 use actix_web::{web, App, HttpServer};
-use btp_auth_server::{connection, model, routes};
+use btp_auth_server::{configuration::database::TEST_DATABASE_CONFIG, connection, model, routes};
 use environment;
 
+const DATABASE_INITIALIZATION_FAILURE: &str = "Failed to initialize database";
 const APP_STATE_CREATION_FAILURE: &str = "Failed to create application state";
 const APP_STATE_INITIALIZATION_FAILURE: &str = "Failed to initialize application state";
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-    let state = model::ServiceState::new()
+    let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+        .await
+        .expect(DATABASE_INITIALIZATION_FAILURE);
+    let state = model::ServiceState::new(db)
         .await
         .expect(APP_STATE_CREATION_FAILURE)
         .initialize()

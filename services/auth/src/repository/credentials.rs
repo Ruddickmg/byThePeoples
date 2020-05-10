@@ -2,8 +2,8 @@ use crate::{model, model::credentials, Error};
 
 type CredentialResults = Result<Option<model::Credentials>, Error>;
 
-pub struct Credentials<'a> {
-    client: &'a database::Client<'a>,
+pub struct Credentials<'a, T: model::Client<'a>> {
+    client: &'a T,
 }
 
 pub enum Status {
@@ -12,8 +12,8 @@ pub enum Status {
     None,
 }
 
-impl<'a> Credentials<'a> {
-    pub fn new(client: &'a database::Client<'a>) -> Credentials {
+impl<'a, T: model::Client<'a>> Credentials<'a, T> {
+    pub fn new(client: &'a T) -> Credentials<'a, T> {
         Credentials { client }
     }
     async fn get_by_single_param(&mut self, query: &str, param: &str) -> CredentialResults {

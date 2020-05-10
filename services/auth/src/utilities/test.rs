@@ -1,4 +1,5 @@
 use crate::{
+    configuration::database::TEST_DATABASE_CONFIG,
     model,
     model::{credentials::query::SUSPEND, CredentialId},
     repository, Error,
@@ -14,7 +15,7 @@ const MAX_FAKE_PASSWORD_LENGTH: usize = 20;
 const MIN_FAKE_PASSWORD_LENGTH: usize = 15;
 
 pub struct Helper {
-    state: model::ServiceState,
+    state: model::ServiceState<model::DatabaseConnection>,
 }
 
 pub fn fake_credentials() -> (String, String, String) {
@@ -26,8 +27,9 @@ pub fn fake_credentials() -> (String, String, String) {
 
 impl Helper {
     pub async fn new() -> Result<Helper, Error> {
+        let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG).await?;
         Ok(Helper {
-            state: model::ServiceState::new().await?,
+            state: model::ServiceState::new(db).await?,
         })
     }
     pub async fn get_credentials_by_name(
