@@ -44,7 +44,7 @@ impl<T, E> Method<T, E> {
             result = Ok(return_value);
         } else {
             panic!(format!(
-                "No mocks return or error was set for call #{} to the \"{}\" method",
+                "No tests return or error was set for call #{} to the \"{}\" method",
                 call, self.method_name
             ));
         };

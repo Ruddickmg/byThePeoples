@@ -1,13 +1,13 @@
 use serde::export::Formatter;
 
 pub mod configuration;
-mod constants;
+pub mod constants;
 pub mod controller;
-mod handler;
+pub mod handler;
 pub mod model;
-mod repository;
+pub mod repository;
 pub mod routes;
-mod utilities;
+pub mod utilities;
 
 #[derive(Debug)]
 pub enum InternalServerError {

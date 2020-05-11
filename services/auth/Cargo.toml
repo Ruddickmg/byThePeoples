@@ -5,9 +5,9 @@ authors = ["Marcus Ruddick <ruddickmg@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-database = { path = "../../utilities/db" }
-environment = { path = "../../utilities/environment" }
-status_codes = { path = "../../utilities/status_codes" }
+database = { path = "../../lib/db" }
+environment = { path = "../../lib/environment" }
+status_codes = { path = "../../lib/status_codes" }
 rustls = "0.16.0"
 actix-web = "2.0.0"
 actix-rt = "1.0.0"

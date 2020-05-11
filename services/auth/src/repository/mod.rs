@@ -1,5 +1,5 @@
 pub mod credentials;
-pub mod failed_login;
+pub mod login_history;
 
 pub use credentials::Credentials;
-pub use failed_login::LoginHistory;
+pub use login_history::LoginHistory;

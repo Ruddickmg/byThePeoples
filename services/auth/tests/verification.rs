@@ -1,41 +1,6 @@
-use crate::{
-    controller::{authorization, jwt},
-    model,
-};
-use actix_web::{web, HttpResponse};
-
-pub async fn authenticate_credentials<T: model::Database>(
-    state: web::Data<model::ServiceState<T>>,
-    json: web::Json<model::NameRequest>,
-) -> HttpResponse {
-    let user_credentials = model::NameRequest::from(json);
-    match authorization::authorize(&user_credentials, &state.credentials, &state.login_history)
-        .await
-    {
-        Ok(stored_credentials) => match stored_credentials {
-            authorization::Results::Valid(credentials) => {
-                match jwt::set_token(HttpResponse::Ok(), credentials) {
-                    Ok(authenticated_response) => authenticated_response,
-                    Err(_) => HttpResponse::InternalServerError().finish(),
-                }
-            }
-            _ => HttpResponse::Unauthorized().finish(),
-        },
-        Err(_) => HttpResponse::InternalServerError().finish(),
-    }
-}
-//
-// #[cfg(test)]
+// #[test]
 // mod auth_tests {
-//     use super::*;
-//     use crate::{
-//         configuration::{
-//             database::TEST_DATABASE_CONFIG, ACCOUNT_LOCK_DURATION_IN_SECONDS,
-//             ALLOWED_FAILED_LOGIN_ATTEMPTS,
-//         },
-//         controller, model,
-//         utilities::test as test_helper,
-//     };
+//     use actix_rt;
 //     use actix_web::{http, test, FromRequest};
 //     use std::{
 //         ops::Sub,

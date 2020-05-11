@@ -14,7 +14,7 @@
       <sourceFolder url="file://$MODULE_DIR$/postgres_seeder/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/postgres_seeder/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/postgres_seeder/benches" isTestSource="true" />
-      <sourceFolder url="file://$MODULE_DIR$/utilities/environment/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/environment/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/utilities/environment/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/utilities/environment/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/utilities/environment/benches" isTestSource="true" />
@@ -22,11 +22,11 @@
       <sourceFolder url="file://$MODULE_DIR$/services/api/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/services/api/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/services/api/benches" isTestSource="true" />
-      <sourceFolder url="file://$MODULE_DIR$/utilities/db/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/db/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/utilities/db/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/utilities/db/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/utilities/db/benches" isTestSource="true" />
-      <sourceFolder url="file://$MODULE_DIR$/utilities/files/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/files/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/utilities/files/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/utilities/files/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/utilities/files/benches" isTestSource="true" />
@@ -34,17 +34,17 @@
       <sourceFolder url="file://$MODULE_DIR$/utilities/mocker/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/utilities/mocker/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/utilities/mocker/benches" isTestSource="true" />
-      <sourceFolder url="file://$MODULE_DIR$/utilities/status_codes/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/status_codes/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/utilities/status_codes/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/utilities/status_codes/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/utilities/status_codes/benches" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/api/target" />
+      <excludeFolder url="file://$MODULE_DIR$/lib/db/target" />
+      <excludeFolder url="file://$MODULE_DIR$/lib/files/target" />
       <excludeFolder url="file://$MODULE_DIR$/postgres_seeder/target" />
       <excludeFolder url="file://$MODULE_DIR$/services/api/target" />
       <excludeFolder url="file://$MODULE_DIR$/services/auth/target" />
-      <excludeFolder url="file://$MODULE_DIR$/utilities/db/target" />
       <excludeFolder url="file://$MODULE_DIR$/utilities/environment/target" />
-      <excludeFolder url="file://$MODULE_DIR$/utilities/files/target" />
       <excludeFolder url="file://$MODULE_DIR$/utilities/mocker/target" />
       <excludeFolder url="file://$MODULE_DIR$/utilities/status_codes/target" />
     </content>

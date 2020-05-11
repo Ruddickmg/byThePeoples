@@ -51,7 +51,7 @@ pub mod migration_tests {
 
     #[test]
     fn get_files_by_extension() {
-        let dir_path = String::from("/home/moon/web/byThePeoples/utilities/db/src");
+        let dir_path = String::from("/home/moon/web/byThePeoples/lib/db/src");
         let file_name = String::from("sql_file.sql");
         let file_path = format!("{}/{}", dir_path, file_name);
         fs::File::create(&file_path);

@@ -15,7 +15,7 @@ pub use request::*;
 
 #[derive(Clone)]
 pub struct ServiceState<T: Database> {
-    db: T,
+    pub db: T,
     pub login_history: repository::LoginHistory<T>,
     pub credentials: repository::Credentials<T>,
 }

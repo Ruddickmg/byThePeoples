@@ -1,44 +1,5 @@
-use crate::{
-    controller::{credentials, jwt},
-    model,
-};
-use actix_web::{web, HttpResponse};
-
-pub async fn update_credentials<T: model::Database>(
-    state: web::Data<model::ServiceState<T>>,
-    json: web::Json<model::UpdateCredentials>,
-) -> HttpResponse {
-    let updated_credentials = model::UpdateCredentials::from(json);
-    let model::UpdateCredentials {
-        auth,
-        credentials: updates,
-    } = updated_credentials;
-    if let Ok(status) =
-        credentials::update(&state.credentials, &state.login_history, &auth, &updates).await
-    {
-        match status {
-            credentials::UpdateResults::Success(credentials) => {
-                jwt::set_token(HttpResponse::Ok(), credentials)
-                    .unwrap_or(HttpResponse::InternalServerError().finish())
-            }
-            _ => HttpResponse::Unauthorized().finish(),
-        }
-    } else {
-        HttpResponse::InternalServerError().finish()
-    }
-}
-//
-// #[cfg(test)]
+// #[test]
 // mod update_credentials_test {
-//     use super::*;
-//     use crate::{
-//         configuration::{
-//             database::TEST_DATABASE_CONFIG, ACCOUNT_LOCK_DURATION_IN_SECONDS,
-//             ALLOWED_FAILED_LOGIN_ATTEMPTS,
-//         },
-//         controller, model,
-//         utilities::test as test_helper,
-//     };
 //     use actix_web::{http, test, FromRequest};
 //     use std::{
 //         ops::Sub,
