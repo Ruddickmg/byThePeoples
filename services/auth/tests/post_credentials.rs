@@ -1,10 +1,8 @@
 extern crate btp_auth_server;
-mod helper;
+pub mod helper;
 use actix_rt;
-use actix_web::{http, test, web, App, FromRequest};
-use btp_auth_server::{
-    configuration::database::TEST_DATABASE_CONFIG, model, routes, routes::CREDENTIALS_ROUTE,
-};
+use actix_web::{http, test, App};
+use btp_auth_server::{model, routes, routes::CREDENTIALS_ROUTE};
 
 const WEAK_PASSWORD: &str = "password";
 
@@ -138,6 +136,7 @@ async fn returns_conflict_if_name_exists() {
     )
     .await;
     let resp = test::call_service(&mut server, req).await;
+    db.delete_credentials_by_name(&name).await;
     assert_eq!(resp.status(), status_codes::CONFLICT);
 }
 
