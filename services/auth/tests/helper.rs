@@ -41,6 +41,7 @@ pub fn fake_credentials() -> (String, String, String) {
 }
 
 pub struct Helper {
+    db: model::DatabaseConnection,
     state: model::ServiceState<model::DatabaseConnection>,
 }
 
@@ -48,7 +49,8 @@ impl Helper {
     pub async fn new() -> Result<Helper, Error> {
         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG).await?;
         Ok(Helper {
-            state: model::ServiceState::new(db).await?,
+            db: db.clone(),
+            state: model::ServiceState::new(db.clone()).await?,
         })
     }
     pub async fn get_credentials_by_name(
@@ -65,7 +67,7 @@ impl Helper {
         }: &model::FullRequest = request;
         let query =
             String::from("INSERT INTO auth.credentials(name, hash, email) VALUES ($1, $2, $3)");
-        let db = &self.state.db;
+        let db = &self.db;
         db.client()
             .await
             .unwrap()
@@ -74,7 +76,7 @@ impl Helper {
             .unwrap();
     }
     pub async fn delete_credentials_by_name(&self, name: &str) {
-        let db = &self.state.db;
+        let db = &self.db;
         db.client()
             .await
             .unwrap()
@@ -83,7 +85,7 @@ impl Helper {
             .unwrap();
     }
     pub async fn suspend_user(&self, user_id: &CredentialId) {
-        let db = &self.state.db;
+        let db = &self.db;
         db.client()
             .await
             .unwrap()
@@ -92,7 +94,7 @@ impl Helper {
             .unwrap();
     }
     pub async fn set_login_attempts(&self, user_id: &CredentialId, attempts: &database::SmallInt) {
-        let db = &self.state.db;
+        let db = &self.db;
         db.client()
             .await
             .unwrap()
@@ -101,7 +103,7 @@ impl Helper {
             .unwrap();
     }
     pub async fn set_login_history(&self, failed_login_record: &model::FailedLogin) {
-        let db = &self.state.db;
+        let db = &self.db;
         let model::FailedLogin {
             user_id,
             updated_at,
@@ -122,7 +124,7 @@ impl Helper {
         &self,
         user_id: &CredentialId,
     ) -> Result<Vec<model::FailedLogin>, Error> {
-        let db = &self.state.db;
+        let db = &self.db;
         let client = &db.client().await?;
         let stmt = client.prepare(GET_FAILED_LOGIN_HISTORY).await?;
         Ok(client

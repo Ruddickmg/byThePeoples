@@ -146,7 +146,6 @@ pub async fn update_credentials<T: model::Database>(
 //         let (name, email, password) = test_helper::fake_credentials();
 //         let (name2, email2, password2) = test_helper::fake_credentials();
 //         let hashed_password = controller::password::hash_password(&password).unwrap();
-//         let hashed_password2 = controller::password::hash_password(&password2).unwrap();
 //         let auth_credentials = model::EmailRequest::new(&email, &password);
 //         let updated_credentials =
 //             model::CredentialsRequest::new(&None, &None, &Some(password2.clone()));
@@ -180,7 +179,6 @@ pub async fn update_credentials<T: model::Database>(
 //         let (name, email, password) = test_helper::fake_credentials();
 //         let (_name2, email2, password2) = test_helper::fake_credentials();
 //         let hashed_password = controller::password::hash_password(&password).unwrap();
-//         let hashed_password2 = controller::password::hash_password(&password2).unwrap();
 //         let auth_credentials = model::EmailRequest::new(&email, &password);
 //         let updated_credentials =
 //             model::CredentialsRequest::new(&None, &Some(email2.clone()), &None);
@@ -355,41 +353,41 @@ pub async fn update_credentials<T: model::Database>(
 //         assert_ne!(user_credentials.locked_at, None);
 //     }
 //
-//     #[actix_rt::test]
-//     async fn deletes_the_login_history_once_a_user_has_been_suspended() {
-//         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
-//             .await
-//             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
-//         let (name, email, password) = test_helper::fake_credentials();
-//         let hashed_password = controller::password::hash_password(&password).unwrap();
-//         let auth_credentials = model::EmailRequest::new(&email, "Invalid Password");
-//         let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
-//         let data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
-//         helper
-//             .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
-//             .await;
-//         let stored_credentials = helper
-//             .get_credentials_by_name(&name)
-//             .await
-//             .unwrap()
-//             .unwrap();
-//         helper
-//             .set_login_attempts(&stored_credentials.id, &(ALLOWED_FAILED_LOGIN_ATTEMPTS + 1))
-//             .await;
-//         let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
-//         let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
-//             .await
-//             .unwrap();
-//         update_credentials(request_state, json).await;
-//         let login_history = helper
-//             .get_login_history(&stored_credentials.id)
-//             .await
-//             .unwrap();
-//         helper.delete_credentials_by_name(&name).await;
-//         assert_eq!(login_history.len(), 0);
-//     }
+// #[actix_rt::test]
+// async fn deletes_the_login_history_once_a_user_has_been_suspended() {
+//     let helper = test_helper::Helper::new().await.unwrap();
+//     let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         .await
+//         .unwrap();
+//     let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//     let (name, email, password) = test_helper::fake_credentials();
+//     let hashed_password = controller::password::hash_password(&password).unwrap();
+//     let auth_credentials = model::EmailRequest::new(&email, "Invalid Password");
+//     let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
+//     let data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
+//     helper
+//         .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+//         .await;
+//     let stored_credentials = helper
+//         .get_credentials_by_name(&name)
+//         .await
+//         .unwrap()
+//         .unwrap();
+//     helper
+//         .set_login_attempts(&stored_credentials.id, &(ALLOWED_FAILED_LOGIN_ATTEMPTS + 1))
+//         .await;
+//     let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
+//     let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+//         .await
+//         .unwrap();
+//     update_credentials(request_state, json).await;
+//     let login_history = helper
+//         .get_login_history(&stored_credentials.id)
+//         .await
+//         .unwrap();
+//     helper.delete_credentials_by_name(&name).await;
+//     assert_eq!(login_history.len(), 0);
+// }
 //
 //     #[actix_rt::test]
 //     async fn deletes_login_history_if_previous_update_failures_are_expired() {
