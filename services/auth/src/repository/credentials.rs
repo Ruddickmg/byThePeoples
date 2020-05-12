@@ -1,9 +1,13 @@
 use crate::{model, model::credentials, Error};
+use async_trait::async_trait;
+use std::marker::{Send, Sync};
 
 type CredentialResults = Result<Option<model::Credentials>, Error>;
+pub type AppCredentials = CredentialsRepository<model::DatabaseConnection>;
 
-pub struct Credentials<'a, T: model::Client<'a>> {
-    client: &'a T,
+#[derive(Clone)]
+pub struct CredentialsRepository<T: model::Database> {
+    db: T,
 }
 
 pub enum Status {
@@ -12,14 +16,14 @@ pub enum Status {
     None,
 }
 
-impl<'a, T: model::Client<'a>> Credentials<'a, T> {
-    pub fn new(client: &'a T) -> Credentials<'a, T> {
-        Credentials { client }
+impl<T: model::Database> CredentialsRepository<T> {
+    pub fn new(db: T) -> CredentialsRepository<T> {
+        CredentialsRepository { db }
     }
-    async fn get_by_single_param(&mut self, query: &str, param: &str) -> CredentialResults {
-        let statement = self.client.prepare(query).await?;
-        let mut results = self
-            .client
+    pub async fn get_by_single_param(&self, query: &str, param: &str) -> CredentialResults {
+        let client = self.db.client().await?;
+        let statement = client.prepare(query).await?;
+        let mut results = client
             .query::<model::Credentials>(&statement, &[&param])
             .await?;
         if results.is_empty() {
@@ -28,19 +32,19 @@ impl<'a, T: model::Client<'a>> Credentials<'a, T> {
             Ok(Some(results.remove(0)))
         }
     }
-    pub async fn by_name(&mut self, name: &str) -> CredentialResults {
+    pub async fn by_name(&self, name: &str) -> CredentialResults {
         self.get_by_single_param(credentials::query::NAME, name)
             .await
     }
-    pub async fn by_email(&mut self, email: &str) -> CredentialResults {
+    pub async fn by_email(&self, email: &str) -> CredentialResults {
         self.get_by_single_param(credentials::query::EMAIL, email)
             .await
     }
-    pub async fn get_status(&mut self, credentials: &model::FullRequest) -> Result<Status, Error> {
+    pub async fn get_status(&self, credentials: &model::FullRequest) -> Result<Status, Error> {
+        let client = self.db.client().await?;
         let model::FullRequest { name, email, .. } = credentials;
-        let stmt = self.client.prepare(credentials::query::DELETED_AT).await?;
-        let stored_credentials = self
-            .client
+        let stmt = client.prepare(credentials::query::DELETED_AT).await?;
+        let stored_credentials = client
             .query::<credentials::DeletedAt>(&stmt, &[&name, &email])
             .await?;
         if stored_credentials.is_empty() {
@@ -63,36 +67,129 @@ impl<'a, T: model::Client<'a>> Credentials<'a, T> {
             id,
             ..
         } = credentials;
-        let stmt = self.client.prepare(credentials::query::UPDATE).await?;
-        Ok(self
-            .client
+        let client = self.db.client().await?;
+        let stmt = client.prepare(credentials::query::UPDATE).await?;
+        Ok(client
             .query::<model::Credentials>(&stmt, &[&name, &hash, &email, &id])
             .await?
             .remove(0))
     }
-    pub async fn save_credentials(
-        &mut self,
-        credentials: &model::FullRequest,
-    ) -> Result<Vec<credentials::AffectedRows>, Error> {
+    pub async fn save_credentials(&self, credentials: &model::FullRequest) -> Result<i32, Error> {
         let model::FullRequest {
             name,
             email,
             password,
         } = credentials;
-        let stmt = self.client.prepare(credentials::query::SAVE).await?;
-        Ok(self
-            .client
+        let client = self.db.client().await?;
+        let stmt = client.prepare(credentials::query::SAVE).await?;
+        Ok(client
             .query::<credentials::AffectedRows>(&stmt, &[&name, &email, &password])
-            .await?)
+            .await?
+            .first()
+            .map_or(0, |affected| affected.count))
     }
-    pub async fn mark_as_deleted_by_email(&mut self, email: &str) -> Result<(), Error> {
-        let stmt = self
-            .client
-            .prepare(credentials::query::DELETE_BY_EMAIL)
-            .await?;
-        self.client
+    pub async fn mark_as_deleted_by_email(&self, email: &str) -> Result<i32, Error> {
+        let client = self.db.client().await?;
+        let stmt = client.prepare(credentials::query::DELETE_BY_EMAIL).await?;
+        Ok(client
             .query::<credentials::AffectedRows>(&stmt, &[&email])
+            .await?
+            .first()
+            .map_or(0, |affected| affected.count))
+    }
+}
+
+#[async_trait]
+pub trait Credentials<T: model::Database>: Clone + Send + Sync {
+    async fn get_by_single_param(&self, query: &str, param: &str) -> CredentialResults;
+    async fn by_name(&self, name: &str) -> CredentialResults;
+    async fn by_email(&self, email: &str) -> CredentialResults;
+    async fn get_status(&self, credentials: &model::FullRequest) -> Result<Status, Error>;
+    async fn update_credentials(
+        &self,
+        credentials: &model::Credentials,
+    ) -> Result<model::Credentials, Error>;
+    async fn save_credentials(&self, credentials: &model::FullRequest) -> Result<i32, Error>;
+    async fn mark_as_deleted_by_email(&self, email: &str) -> Result<i32, Error>;
+}
+
+#[async_trait]
+impl<T: model::Database> Credentials<T> for CredentialsRepository<T> {
+    async fn get_by_single_param(&self, query: &str, param: &str) -> CredentialResults {
+        let client = self.db.client().await?;
+        let statement = client.prepare(query).await?;
+        let mut results = client
+            .query::<model::Credentials>(&statement, &[&param])
             .await?;
-        Ok(())
+        if results.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(results.remove(0)))
+        }
+    }
+    async fn by_name(&self, name: &str) -> CredentialResults {
+        self.get_by_single_param(credentials::query::NAME, name)
+            .await
+    }
+    async fn by_email(&self, email: &str) -> CredentialResults {
+        self.get_by_single_param(credentials::query::EMAIL, email)
+            .await
+    }
+    async fn get_status(&self, credentials: &model::FullRequest) -> Result<Status, Error> {
+        let client = self.db.client().await?;
+        let model::FullRequest { name, email, .. } = credentials;
+        let stmt = client.prepare(credentials::query::DELETED_AT).await?;
+        let stored_credentials = client
+            .query::<credentials::DeletedAt>(&stmt, &[&name, &email])
+            .await?;
+        if stored_credentials.is_empty() {
+            Ok(Status::None)
+        } else {
+            Ok(match stored_credentials.first() {
+                Some(_) => Status::Deleted,
+                None => Status::Exists,
+            })
+        }
+    }
+    async fn update_credentials(
+        &self,
+        credentials: &model::Credentials,
+    ) -> Result<model::Credentials, Error> {
+        let model::Credentials {
+            name,
+            email,
+            hash,
+            id,
+            ..
+        } = credentials;
+        let client = self.db.client().await?;
+        let stmt = client.prepare(credentials::query::UPDATE).await?;
+        Ok(client
+            .query::<model::Credentials>(&stmt, &[&name, &hash, &email, &id])
+            .await?
+            .remove(0))
+    }
+    async fn save_credentials(&self, credentials: &model::FullRequest) -> Result<i32, Error> {
+        let model::FullRequest {
+            name,
+            email,
+            password,
+        } = credentials;
+        let client = self.db.client().await?;
+        let stmt = client.prepare(credentials::query::SAVE).await?;
+        Ok(client
+            .query::<credentials::AffectedRows>(&stmt, &[&name, &email, &password])
+            .await?
+            .first()
+            .map_or(0, |affected| affected.count))
+    }
+    async fn mark_as_deleted_by_email(&self, email: &str) -> Result<i32, Error> {
+        let client = self.db.client().await?;
+        let stmt = client.prepare(credentials::query::DELETE_BY_EMAIL).await?;
+        Ok(client
+            .query::<credentials::AffectedRows>(&stmt, &[&email])
+            .await?
+            .first()
+            .map_or(0, |affected| affected.count))
     }
 }
