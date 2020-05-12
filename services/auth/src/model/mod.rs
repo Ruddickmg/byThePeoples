@@ -1,4 +1,5 @@
-use crate::{repository, Error};
+use crate::repository;
+use std::marker::PhantomData;
 
 pub mod credentials;
 mod failed_login;
@@ -12,25 +13,34 @@ pub use database::DatabaseConnection;
 pub use failed_login::*;
 pub use request::*;
 
-pub type AppServiceState =
-    ServiceState<DatabaseConnection, repository::CredentialsRepository<DatabaseConnection>>;
+pub type AppServiceState = ServiceState<
+    DatabaseConnection,
+    repository::LoginHistoryRepository<DatabaseConnection>,
+    repository::CredentialsRepository<DatabaseConnection>,
+>;
 
 #[derive(Clone)]
-pub struct ServiceState<T: Database, C: repository::Credentials<T>> {
-    pub login_history: repository::LoginHistory<T>,
+pub struct ServiceState<T: Database, L: repository::LoginHistory<T>, C: repository::Credentials<T>>
+{
+    pub login_history: L,
     pub credentials: C,
+    phantom: PhantomData<T>,
 }
 
-impl<T: Database, C: repository::Credentials<T>> ServiceState<T, C> {
-    pub fn new(db: T, credentials: C) -> ServiceState<T, C> {
+impl<T: Database, L: repository::LoginHistory<T>, C: repository::Credentials<T>>
+    ServiceState<T, L, C>
+{
+    pub fn new(login_history: L, credentials: C) -> ServiceState<T, L, C> {
         ServiceState {
             credentials,
-            login_history: repository::LoginHistory::new(db.clone()),
+            login_history,
+            phantom: PhantomData,
         }
     }
 }
 
-pub async fn initialize_state(db: &DatabaseConnection) -> Result<AppServiceState, Error> {
+pub fn initialize_state(db: &DatabaseConnection) -> AppServiceState {
     let credentials_repository = repository::CredentialsRepository::new(db.clone());
-    Ok(ServiceState::new(db.clone(), credentials_repository))
+    let login_history_repository = repository::LoginHistoryRepository::new(db.clone());
+    ServiceState::new(login_history_repository, credentials_repository)
 }

@@ -6,7 +6,7 @@ pub struct Client<'a> {
     connection: PooledConnection<'a>,
 }
 
-impl<'a> Client<'a> {
+impl<'a: 'c, 'c> Client<'a> {
     pub fn new(connection: PooledConnection<'a>) -> Client {
         Client { connection }
     }
@@ -34,13 +34,13 @@ impl<'a> Client<'a> {
     pub async fn execute_file(&self, path: &str) -> Result<()> {
         Ok(self.batch(&fs::read_to_string(path)?).await?)
     }
-    pub async fn transaction(&'a mut self) -> Result<Transaction<'a>> {
+    pub async fn transaction(&'c mut self) -> Result<Transaction<'c>> {
         Ok(Transaction::new(self.connection.transaction().await?).await?)
     }
 }
 
 #[async_trait]
-pub trait ClientTrait<'a> {
+pub trait ClientTrait<'a: 'c, 'c> {
     async fn execute<'b>(&self, query: &str, params: Params<'b>) -> Result<u64>;
     async fn prepare(&self, query: &str) -> Result<Statement>;
     async fn query<'b, T: Send + From<Row>>(
@@ -50,11 +50,11 @@ pub trait ClientTrait<'a> {
     ) -> Result<Vec<T>>;
     async fn batch(&self, sql: &str) -> Result<()>;
     async fn execute_file(&self, path: &str) -> Result<()>;
-    async fn transaction(&'a mut self) -> Result<Transaction<'a>>;
+    async fn transaction(&'c mut self) -> Result<Transaction<'c>>;
 }
 
 #[async_trait]
-impl<'a> ClientTrait<'a> for Client<'a> {
+impl<'a: 'c, 'c> ClientTrait<'a, 'c> for Client<'a> {
     async fn execute<'b>(&self, query: &str, params: Params<'b>) -> Result<u64> {
         Ok(self.connection.execute(query, params).await?)
     }
@@ -79,7 +79,7 @@ impl<'a> ClientTrait<'a> for Client<'a> {
     async fn execute_file(&self, path: &str) -> Result<()> {
         Ok(self.batch(&fs::read_to_string(path)?).await?)
     }
-    async fn transaction(&'a mut self) -> Result<Transaction<'a>> {
+    async fn transaction(&'c mut self) -> Result<Transaction<'c>> {
         Ok(Transaction::new(self.connection.transaction().await?).await?)
     }
 }

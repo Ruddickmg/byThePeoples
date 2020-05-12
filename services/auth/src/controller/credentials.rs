@@ -48,9 +48,13 @@ pub enum DeleteResults {
     Unauthorized,
 }
 
-pub async fn delete<T: model::Database, C: repository::Credentials<T>>(
+pub async fn delete<
+    T: model::Database,
+    L: repository::LoginHistory<T>,
+    C: repository::Credentials<T>,
+>(
     credentials: &C,
-    login_history: &repository::LoginHistory<T>,
+    login_history: &L,
     request: &model::EmailRequest,
 ) -> Result<DeleteResults, Error> {
     let model::EmailRequest { password, email }: &model::EmailRequest = request;
@@ -78,9 +82,13 @@ pub enum UpdateResults {
     Unauthorized,
 }
 
-pub async fn update<T: model::Database, C: repository::Credentials<T>>(
+pub async fn update<
+    T: model::Database,
+    L: repository::LoginHistory<T>,
+    C: repository::Credentials<T>,
+>(
     credentials: &C,
-    login_history: &repository::LoginHistory<T>,
+    login_history: &L,
     auth_details: &model::EmailRequest,
     request: &model::CredentialsRequest,
 ) -> Result<UpdateResults, Error> {

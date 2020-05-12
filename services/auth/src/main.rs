@@ -4,7 +4,6 @@ use environment;
 use std::env;
 
 const DATABASE_INITIALIZATION_FAILURE: &str = "Failed to initialize database";
-const APP_STATE_INITIALIZATION_FAILURE: &str = "Failed to initialize application state";
 
 pub async fn run_migrations<T: model::Database>(db: &T) -> Result<(), database::Error> {
     let path_to_migrations = format!(
@@ -21,11 +20,8 @@ async fn main() -> std::io::Result<()> {
     let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
         .await
         .expect(DATABASE_INITIALIZATION_FAILURE);
-    let state = model::initialize_state(&db)
-        .await
-        .expect(APP_STATE_INITIALIZATION_FAILURE);
     let uri = connection::uri();
-    let data = web::Data::new(state);
+    let data = web::Data::new(model::initialize_state(&db));
     let mut server = HttpServer::new(move || {
         App::new()
             .app_data(data.clone())

@@ -35,6 +35,10 @@ impl<'a> Transaction<'a> {
     pub async fn execute_file(&self, path: &str) -> Result<()> {
         Ok(self.batch(&fs::read_to_string(path)?).await?)
     }
+    pub async fn commit(self) -> Result<()> {
+        self.transaction.commit().await?;
+        Ok(())
+    }
 }
 
 #[async_trait]
