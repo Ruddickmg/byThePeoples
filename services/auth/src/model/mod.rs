@@ -1,5 +1,4 @@
 use crate::{repository, Error};
-use std::env;
 
 pub mod credentials;
 mod failed_login;
@@ -13,30 +12,25 @@ pub use database::DatabaseConnection;
 pub use failed_login::*;
 pub use request::*;
 
+pub type AppServiceState =
+    ServiceState<DatabaseConnection, repository::CredentialsRepository<DatabaseConnection>>;
+
 #[derive(Clone)]
-pub struct ServiceState<T: Database> {
-    pub db: T,
+pub struct ServiceState<T: Database, C: repository::Credentials<T>> {
     pub login_history: repository::LoginHistory<T>,
-    pub credentials: repository::Credentials<T>,
+    pub credentials: C,
 }
 
-impl<T: Database> ServiceState<T> {
-    pub async fn new(db: T) -> Result<ServiceState<T>, Error> {
-        Ok(ServiceState {
-            db: db.clone(),
-            credentials: repository::Credentials::new(db.clone()),
+impl<T: Database, C: repository::Credentials<T>> ServiceState<T, C> {
+    pub fn new(db: T, credentials: C) -> ServiceState<T, C> {
+        ServiceState {
+            credentials,
             login_history: repository::LoginHistory::new(db.clone()),
-        })
-    }
-    pub async fn initialize(self) -> Result<ServiceState<T>, database::Error> {
-        if environment::in_development() {
-            let path_to_migrations = format!(
-                "{}/src/sql/migrations",
-                env::current_dir().unwrap().to_str().unwrap()
-            );
-            self.db.migrate(&path_to_migrations).await?;
-            println!("Migration Successful.\n");
         }
-        Ok(self)
     }
+}
+
+pub async fn initialize_state(db: &DatabaseConnection) -> Result<AppServiceState, Error> {
+    let credentials_repository = repository::CredentialsRepository::new(db.clone());
+    Ok(ServiceState::new(db.clone(), credentials_repository))
 }

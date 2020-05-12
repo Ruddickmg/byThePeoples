@@ -1,6 +1,9 @@
 use crate::{client, configuration, Configuration, Pool, Result};
 use async_trait::async_trait;
-use std::fs;
+use std::{
+    fs,
+    marker::{Send, Sync},
+};
 
 const SQL_EXTENSION: &str = "sql";
 
@@ -38,7 +41,7 @@ impl ConnectionPool {
 }
 
 #[async_trait]
-pub trait ConnectionPoolTrait: Clone {
+pub trait ConnectionPoolTrait: Clone + Send + Sync {
     async fn client(&self) -> Result<client::Client<'_>>;
     async fn migrate(&self, path: &str) -> Result<()>;
 }

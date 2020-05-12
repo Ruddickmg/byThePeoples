@@ -11,6 +11,7 @@ status_codes = { path = "../../lib/status_codes" }
 rustls = "0.16.0"
 actix-web = "2.0.0"
 actix-rt = "1.0.0"
+async-trait = "0.1.30"
 argonautica = "0.2.0"
 listenfd = "0.3"
 serde = "1.0.104"

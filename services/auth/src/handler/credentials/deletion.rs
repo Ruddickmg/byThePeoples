@@ -1,8 +1,8 @@
-use crate::{controller::credentials, model};
+use crate::{controller::credentials, model, repository};
 use actix_web::{web, HttpResponse};
 
-pub async fn delete_credentials<T: model::Database>(
-    state: web::Data<model::ServiceState<T>>,
+pub async fn delete_credentials<T: model::Database, C: repository::Credentials<T>>(
+    state: web::Data<model::ServiceState<T, C>>,
     json: web::Json<model::EmailRequest>,
 ) -> HttpResponse {
     let user_credentials = model::EmailRequest::from(json);

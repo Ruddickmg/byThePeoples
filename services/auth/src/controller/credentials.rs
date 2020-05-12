@@ -6,8 +6,8 @@ pub enum SaveResults {
     Conflict,
 }
 
-pub async fn create<T: model::Database>(
-    credentials: &repository::Credentials<T>,
+pub async fn create<T: model::Database, C: repository::Credentials<T>>(
+    credentials: &C,
     request: &model::FullRequest,
 ) -> Result<SaveResults, Error> {
     let model::FullRequest {
@@ -48,8 +48,8 @@ pub enum DeleteResults {
     Unauthorized,
 }
 
-pub async fn delete<T: model::Database>(
-    credentials: &repository::Credentials<T>,
+pub async fn delete<T: model::Database, C: repository::Credentials<T>>(
+    credentials: &C,
     login_history: &repository::LoginHistory<T>,
     request: &model::EmailRequest,
 ) -> Result<DeleteResults, Error> {
@@ -78,8 +78,8 @@ pub enum UpdateResults {
     Unauthorized,
 }
 
-pub async fn update<T: model::Database>(
-    credentials: &repository::Credentials<T>,
+pub async fn update<T: model::Database, C: repository::Credentials<T>>(
+    credentials: &C,
     login_history: &repository::LoginHistory<T>,
     auth_details: &model::EmailRequest,
     request: &model::CredentialsRequest,

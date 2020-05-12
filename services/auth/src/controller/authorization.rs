@@ -7,9 +7,9 @@ pub enum Results {
     None,
 }
 
-pub async fn authorize<T: model::Database>(
+pub async fn authorize<T: model::Database, C: repository::Credentials<T>>(
     user_credentials: &model::NameRequest,
-    auth_credentials: &repository::Credentials<T>,
+    auth_credentials: &C,
     login_history: &repository::LoginHistory<T>,
 ) -> Result<Results, Error> {
     if let Some(auth_record) = auth_credentials.by_name(&user_credentials.name).await? {

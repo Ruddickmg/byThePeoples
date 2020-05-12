@@ -1,20 +1,27 @@
 use actix_web::{web, App, HttpServer};
 use btp_auth_server::{configuration::database::TEST_DATABASE_CONFIG, connection, model, routes};
 use environment;
+use std::env;
 
 const DATABASE_INITIALIZATION_FAILURE: &str = "Failed to initialize database";
-const APP_STATE_CREATION_FAILURE: &str = "Failed to create application state";
 const APP_STATE_INITIALIZATION_FAILURE: &str = "Failed to initialize application state";
+
+pub async fn run_migrations<T: model::Database>(db: &T) -> Result<(), database::Error> {
+    let path_to_migrations = format!(
+        "{}/src/sql/migrations",
+        env::current_dir().unwrap().to_str().unwrap()
+    );
+    db.migrate(&path_to_migrations).await?;
+    println!("Migration Successful.\n");
+    Ok(())
+}
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
         .await
         .expect(DATABASE_INITIALIZATION_FAILURE);
-    let state = model::ServiceState::new(db)
-        .await
-        .expect(APP_STATE_CREATION_FAILURE)
-        .initialize()
+    let state = model::initialize_state(&db)
         .await
         .expect(APP_STATE_INITIALIZATION_FAILURE);
     let uri = connection::uri();
@@ -30,7 +37,9 @@ async fn main() -> std::io::Result<()> {
     } else {
         use listenfd::ListenFd;
         let mut listen = ListenFd::from_env();
-
+        run_migrations(&db)
+            .await
+            .expect(DATABASE_INITIALIZATION_FAILURE);
         println!("Running in development mode.");
 
         server = if let Some(listener) = listen.take_tcp_listener(0).unwrap() {

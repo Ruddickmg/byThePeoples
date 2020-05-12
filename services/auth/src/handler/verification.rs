@@ -1,11 +1,11 @@
 use crate::{
     controller::{authorization, jwt},
-    model,
+    model, repository,
 };
 use actix_web::{web, HttpResponse};
 
-pub async fn authenticate_credentials<T: model::Database>(
-    state: web::Data<model::ServiceState<T>>,
+pub async fn authenticate_credentials<T: model::Database, C: repository::Credentials<T>>(
+    state: web::Data<model::ServiceState<T, C>>,
     json: web::Json<model::NameRequest>,
 ) -> HttpResponse {
     let user_credentials = model::NameRequest::from(json);
@@ -24,6 +24,7 @@ pub async fn authenticate_credentials<T: model::Database>(
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
+
 //
 // #[cfg(test)]
 // mod auth_tests {

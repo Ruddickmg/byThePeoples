@@ -11,7 +11,6 @@ use fake::faker::{internet::en as internet, name::en as name};
 use fake::Fake;
 
 const DATABASE_INITIALIZATION_FAILURE: &str = "Failed to initialize database";
-const APP_STATE_CREATION_FAILURE: &str = "Failed to create application state";
 const APP_STATE_INITIALIZATION_FAILURE: &str = "Failed to initialize application state";
 const CREATE_OR_UPDATE_FAILED_LOGIN: &str = "INSERT INTO auth.failed_login(user_id, attempts, updated_at) VALUES ($1, $2, CURRENT_TIMESTAMP);";
 const GET_FAILED_LOGIN_HISTORY: &str =
@@ -20,14 +19,11 @@ const CREATE_FAILED_LOGIN: &str = "INSERT INTO auth.failed_login(user_id, create
 const MAX_FAKE_PASSWORD_LENGTH: usize = 20;
 const MIN_FAKE_PASSWORD_LENGTH: usize = 15;
 
-pub async fn init_data() -> web::Data<model::ServiceState<model::DatabaseConnection>> {
+pub async fn init_data() -> web::Data<model::AppServiceState> {
     let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
         .await
         .expect(DATABASE_INITIALIZATION_FAILURE);
-    let state = model::ServiceState::new(db)
-        .await
-        .expect(APP_STATE_CREATION_FAILURE)
-        .initialize()
+    let state = model::initialize_state(&db)
         .await
         .expect(APP_STATE_INITIALIZATION_FAILURE);
     web::Data::new(state)
@@ -42,7 +38,7 @@ pub fn fake_credentials() -> (String, String, String) {
 
 pub struct Helper {
     db: model::DatabaseConnection,
-    state: model::ServiceState<model::DatabaseConnection>,
+    state: model::AppServiceState,
 }
 
 impl Helper {
@@ -50,7 +46,7 @@ impl Helper {
         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG).await?;
         Ok(Helper {
             db: db.clone(),
-            state: model::ServiceState::new(db.clone()).await?,
+            state: model::initialize_state(&db).await?,
         })
     }
     pub async fn get_credentials_by_name(
