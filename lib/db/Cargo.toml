@@ -13,5 +13,5 @@ bb8-postgres = "0.4.0"
 environment = { path = "../environment" }
 files = { path = "../files" }
 futures = "0.3.4"
-mock = { path = "../mock" }
+mocking = { path = "../mocking" }
 tokio-postgres = { version="0.5.2", features=["with-chrono-0_4"] }

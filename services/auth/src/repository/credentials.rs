@@ -101,7 +101,6 @@ impl<T: model::Database> CredentialsRepository<T> {
 
 #[async_trait]
 pub trait Credentials<T: model::Database>: Clone + Send + Sync {
-    async fn get_by_single_param(&self, query: &str, param: &str) -> CredentialResults;
     async fn by_name(&self, name: &str) -> CredentialResults;
     async fn by_email(&self, email: &str) -> CredentialResults;
     async fn get_status(&self, credentials: &model::FullRequest) -> Result<Status, Error>;
@@ -115,18 +114,6 @@ pub trait Credentials<T: model::Database>: Clone + Send + Sync {
 
 #[async_trait]
 impl<T: model::Database> Credentials<T> for CredentialsRepository<T> {
-    async fn get_by_single_param(&self, query: &str, param: &str) -> CredentialResults {
-        let client = self.db.client().await?;
-        let statement = client.prepare(query).await?;
-        let mut results = client
-            .query::<model::Credentials>(&statement, &[&param])
-            .await?;
-        if results.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(results.remove(0)))
-        }
-    }
     async fn by_name(&self, name: &str) -> CredentialResults {
         self.get_by_single_param(credentials::query::NAME, name)
             .await

@@ -8,6 +8,7 @@ edition = "2018"
 database = { path = "../../lib/db" }
 environment = { path = "../../lib/environment" }
 status_codes = { path = "../../lib/status_codes" }
+mocking = { path = "../../lib/mocking" }
 rustls = "0.16.0"
 actix-web = "2.0.0"
 actix-rt = "1.0.0"

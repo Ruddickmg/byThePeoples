@@ -3,7 +3,6 @@ pub struct Method<T, E> {
     errors: Vec<Option<E>>,
     method_name: String,
     call_number: u32,
-    calls: u32,
 }
 
 impl<T, E> Method<T, E> {
@@ -13,7 +12,6 @@ impl<T, E> Method<T, E> {
             return_values: vec![],
             errors: vec![],
             call_number: 0,
-            calls: 0,
         }
     }
     pub fn returns(mut self, value: T) -> Method<T, E> {
@@ -36,20 +34,15 @@ impl<T, E> Method<T, E> {
         self
     }
     pub fn call(&mut self) -> Result<T, E> {
-        let call: usize = self.calls as usize;
-        let result: Result<T, E>;
-        if let Some(error) = self.errors.remove(call) {
-            result = Err(error);
-        } else if let Some(return_value) = self.return_values.remove(call) {
-            result = Ok(return_value);
-        } else {
+        let error = self.errors.remove(0);
+        let return_value = self.return_values.remove(0);
+        if error.is_none() && return_value.is_none() {
             panic!(format!(
-                "No tests return or error was set for call #{} to the \"{}\" method",
-                call, self.method_name
-            ));
-        };
-        self.calls += 1;
-        result
+                "No tests return or error was set for a call to the \"{}\" method",
+                self.method_name
+            ))
+        }
+        return_value.map_or(Err(error.unwrap()), |value| Ok(value))
     }
 }
 

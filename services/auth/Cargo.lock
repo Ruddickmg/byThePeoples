@@ -493,6 +493,7 @@ dependencies = [
  "futures 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonwebtoken 7.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "listenfd 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mocking 0.1.0",
  "rustls 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.48 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -664,7 +665,7 @@ dependencies = [
  "environment 0.1.0",
  "files 0.1.0",
  "futures 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "mock 0.1.0",
+ "mocking 0.1.0",
  "tokio-postgres 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -1283,7 +1284,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mock"
+name = "mocking"
 version = "0.1.0"
 
 [[package]]
