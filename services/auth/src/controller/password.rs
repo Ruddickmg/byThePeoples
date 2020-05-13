@@ -1,6 +1,6 @@
 extern crate argonautica;
 
-use crate::{configuration::hash, Error, InternalServerError};
+use crate::{configuration::hash, Error};
 use argonautica::{Hasher, Verifier};
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -45,9 +45,7 @@ pub fn authenticate(password: &str, hash: &str) -> Result<bool, Error> {
         Ok(result) => Ok(result),
         Err(error) => match error.kind() {
             argonautica::ErrorKind::HashDecodeError => Ok(false),
-            _ => Err(Error::InternalServerError(InternalServerError::Unknown(
-                format!("{:#?}", error),
-            ))),
+            _ => Err(Error::InternalServerError(format!("{:#?}", error))),
         },
     }
 }

@@ -9,25 +9,10 @@ pub mod repository;
 pub mod routes;
 pub mod utilities;
 
-#[derive(Debug)]
-pub enum InternalServerError {
-    Unknown(String),
-    Actix(actix_web::Error),
-}
-
-impl std::fmt::Display for InternalServerError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            InternalServerError::Unknown(error) => write!(f, "{}", error),
-            InternalServerError::Actix(error) => write!(f, "{}", error),
-        }
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Error {
     DatabaseError(database::Error),
-    InternalServerError(InternalServerError),
+    InternalServerError(String),
     Unauthorized(argonautica::Error),
     PasswordError(zxcvbn::ZxcvbnError),
     SystemTimeError(std::time::SystemTimeError),
@@ -62,12 +47,6 @@ impl From<zxcvbn::ZxcvbnError> for Error {
 impl From<database::Error> for Error {
     fn from(error: database::Error) -> Error {
         Error::DatabaseError(error)
-    }
-}
-
-impl From<actix_web::error::Error> for Error {
-    fn from(error: actix_web::error::Error) -> Error {
-        Error::InternalServerError(InternalServerError::Actix(error))
     }
 }
 

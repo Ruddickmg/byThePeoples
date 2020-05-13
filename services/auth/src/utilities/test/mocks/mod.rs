@@ -1,2 +1,3 @@
-pub mod repository;
-pub use mocking::Method;
+mod repository;
+
+pub use repository::*;

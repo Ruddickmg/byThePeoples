@@ -32,3 +32,8 @@ pub async fn authorize<
         Ok(Results::None)
     }
 }
+
+#[cfg(test)]
+mod authorization_test {
+    use crate::utilities::test::mock::MockCredentials;
+}

@@ -31,21 +31,15 @@ type PooledConnection<'a> = bb8::PooledConnection<'a, Manager>;
 type Pool = bb8::Pool<Manager>;
 type ConnectionError = bb8::RunError<tokio_postgres::Error>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Error {
-    DatabaseError(tokio_postgres::Error),
-    ConnectionErr(ConnectionError),
-    IoError(io::Error),
     Error(String),
 }
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::DatabaseError(error) => write!(f, "{}", error),
             Error::Error(error) => write!(f, "{}", error),
-            Error::ConnectionErr(error) => write!(f, "{}", error),
-            Error::IoError(error) => write!(f, "{}", error),
         }
     }
 }
@@ -58,19 +52,19 @@ impl From<&str> for Error {
 
 impl From<tokio_postgres::Error> for Error {
     fn from(error: tokio_postgres::Error) -> Self {
-        Error::DatabaseError(error)
+        Error::Error(error.to_string())
     }
 }
 
 impl From<ConnectionError> for Error {
     fn from(error: ConnectionError) -> Self {
-        Error::ConnectionErr(error)
+        Error::Error(error.to_string())
     }
 }
 
 impl From<io::Error> for Error {
     fn from(error: io::Error) -> Self {
-        Error::IoError(error)
+        Error::Error(error.to_string())
     }
 }
 
