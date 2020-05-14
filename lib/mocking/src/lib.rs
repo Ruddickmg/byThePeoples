@@ -28,86 +28,170 @@ impl Count {
 }
 
 #[derive(Clone)]
-pub struct Method<T: Clone, E: Clone> {
+pub struct Method<T: Clone + std::fmt::Debug, E: Clone + std::fmt::Debug> {
     return_values: Vec<Option<T>>,
     errors: Vec<Option<E>>,
     method_name: String,
-    call_number: u32,
+    calls: Count,
     call: Count,
 }
 
-impl<T: Clone, E: Clone> Method<T, E> {
+impl<T: Clone + std::fmt::Debug, E: Clone + std::fmt::Debug> Method<T, E> {
     pub fn new(method: &str) -> Method<T, E> {
         Method {
             method_name: String::from(method),
             return_values: vec![],
             errors: vec![],
-            call_number: 0,
+            calls: Count::new(),
             call: Count::new(),
         }
     }
-    pub fn returns(mut self, value: T) -> Method<T, E> {
+    pub fn returns(&mut self, value: T) -> &mut Method<T, E> {
         self.return_values.push(Some(value));
+        self.errors.push(None);
         self
     }
-    pub fn throws_error(mut self, error: E) -> Method<T, E> {
+    pub fn throws_error(&mut self, error: E) -> &mut Method<T, E> {
         self.errors.push(Some(error));
+        self.return_values.push(None);
         self
     }
-    pub fn then(mut self) -> Method<T, E> {
-        let call = self.call_number as usize;
-        if self.return_values.len() <= call {
-            self.return_values.push(None);
-        }
-        if self.errors.len() <= call {
-            self.errors.push(None)
-        }
-        self.call_number += 1;
-        self
+    pub fn times_called(&self) -> usize {
+        self.calls.get()
     }
-    fn handle_call(&self, return_value: Option<T>, error: Option<E>) -> Result<T, E> {
-        let error_is_none = error.is_none();
-        if error_is_none && return_value.is_none() {
+    fn handle_call(&self) -> Result<T, E> {
+        let call = self.call.get();
+        self.call.increment();
+        let error = self.errors.get(call).map_or(None, |e| e.clone());
+        let return_value = self.return_values.get(call).map_or(None, |v| v.clone());
+        self.panic_if_out_of_bounds(&return_value, &error);
+        match return_value {
+            Some(value) => Ok(value),
+            None => Err(error.unwrap()),
+        }
+    }
+    fn panic_if_out_of_bounds<O, S>(&self, a: &Option<O>, b: &Option<S>) {
+        if a.is_none() && b.is_none() {
             panic!(format!(
-                "No tests return or error was set for a call to the \"{}\" method",
+                "No value or error was found to return from call to {}",
                 self.method_name
             ))
-        } else if error_is_none {
-            Ok(return_value.unwrap())
-        } else {
-            Err(error.unwrap())
         }
     }
-    pub fn call(self) -> Result<T, E> {
-        let call = self.call.get();
-        let error = self.errors.get(call).map(|e| e.clone());
-        let return_value = self.return_values.get(call).map(|v| v.clone());
-        self.call.increment();
-        self.handle_call(return_value.unwrap(), error.unwrap())
+    pub fn call(&self) -> Result<T, E> {
+        self.handle_call()
     }
-    pub fn call_ref(&self) -> Result<T, E> {
-        let call = self.call.get();
-        let error = self.errors.get(call).map(|e| e.clone());
-        let return_value = self.return_values.get(call).map(|v| v.clone());
-        self.call.increment();
-        self.handle_call(return_value.unwrap(), error.unwrap())
-    }
-    pub fn call_mut(mut self) -> Result<T, E> {
-        let error = self.errors.remove(0);
-        let return_value = self.return_values.remove(0);
-        self.handle_call(return_value, error)
-    }
-    pub fn call_mut_ref(&mut self) -> Result<T, E> {
-        let error = self.errors.remove(0);
-        let return_value = self.return_values.remove(0);
-        self.handle_call(return_value, error)
+    pub fn call_mut(&mut self) -> Result<T, E> {
+        self.handle_call()
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
+    #[derive(Clone, Eq, PartialEq, Debug)]
+    struct TestStruct;
+
+    struct Container<T: Clone + std::fmt::Debug> {
+        method: Method<T, &'static str>,
+    }
+
+    impl<T: Clone + std::fmt::Debug> Container<T> {
+        pub fn new() -> Container<T> {
+            Container {
+                method: Method::new("test container method"),
+            }
+        }
+        pub fn get(&self) -> Result<T, &'static str> {
+            self.method.call()
+        }
+        pub fn get_mut(&mut self) -> Result<T, &'static str> {
+            self.method.call_mut()
+        }
+    }
+
     #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+    fn it_returns_pre_defined_values_when_call_is_called() {
+        let test_value = TestStruct;
+        let mut container: Container<&TestStruct> = Container::new();
+        container.method.returns(&test_value);
+        let result = container.get().unwrap();
+        assert_eq!(result, &test_value);
+    }
+
+    #[test]
+    fn it_returns_pre_defined_values_when_call_mut_is_called() {
+        let test_value = TestStruct;
+        let mut container: Container<&TestStruct> = Container::new();
+        container.method.returns(&test_value);
+        let result = container.get_mut().unwrap();
+        assert_eq!(result, &test_value);
+    }
+
+    #[test]
+    fn it_returns_pre_defined_errors_when_call_is_called() {
+        let error_value = "test error";
+        let mut container: Container<&TestStruct> = Container::new();
+        container.method.throws_error(&error_value);
+        let error = container.get().err().unwrap();
+        assert_eq!(error, error_value);
+    }
+
+    #[test]
+    fn it_returns_pre_defined_errors_when_call_mut_is_called() {
+        let error_value = "test error";
+        let mut container: Container<&TestStruct> = Container::new();
+        container.method.throws_error(&error_value);
+        let error = container.get_mut().err().unwrap();
+        assert_eq!(error, error_value);
+    }
+
+    #[test]
+    fn it_returns_multiple_values_from_call() {
+        let test_value = TestStruct;
+        let test_value2 = TestStruct;
+        let mut container: Container<&TestStruct> = Container::new();
+        container.method.returns(&test_value).returns(&test_value2);
+        let _result = container.get().unwrap();
+        let result2 = container.get().unwrap();
+        assert_eq!(result2, &test_value2);
+    }
+
+    #[test]
+    fn it_returns_multiple_values_from_call_mut() {
+        // TODO
+    }
+
+    #[test]
+    fn it_returns_errors_and_values_from_call() {
+        let test_value = TestStruct;
+        let test_error = "test error";
+        let mut container = Container::<&TestStruct>::new();
+        container
+            .method
+            .returns(&test_value)
+            .throws_error(test_error);
+        let result = container.get().unwrap();
+        let error = container.get().err().unwrap();
+        assert_eq!(result, &test_value);
+        assert_eq!(error, test_error);
+    }
+
+    #[test]
+    fn it_returns_errors_and_values_from_call_mut() {
+        // TODO
+    }
+
+    #[test]
+    #[should_panic]
+    fn it_panics_if_call_is_called_and_there_are_no_values_to_return() {
+        Container::<TestStruct>::new().get();
+    }
+
+    #[test]
+    #[should_panic]
+    fn it_panics_if_call_mut_is_called_and_there_are_no_values_to_return() {
+        Container::<TestStruct>::new().get_mut();
     }
 }
