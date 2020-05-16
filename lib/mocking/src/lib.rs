@@ -160,7 +160,13 @@ mod tests {
 
     #[test]
     fn it_returns_multiple_values_from_call_mut() {
-        // TODO
+        let test_value = TestStruct;
+        let test_value2 = TestStruct;
+        let mut container: Container<&TestStruct> = Container::new();
+        container.method.returns(&test_value).returns(&test_value2);
+        let _result = container.get_mut().unwrap();
+        let result2 = container.get_mut().unwrap();
+        assert_eq!(result2, &test_value2);
     }
 
     #[test]
@@ -180,7 +186,17 @@ mod tests {
 
     #[test]
     fn it_returns_errors_and_values_from_call_mut() {
-        // TODO
+        let test_value = TestStruct;
+        let test_error = "test error";
+        let mut container = Container::<&TestStruct>::new();
+        container
+            .method
+            .returns(&test_value)
+            .throws_error(test_error);
+        let result = container.get_mut().unwrap();
+        let error = container.get_mut().err().unwrap();
+        assert_eq!(result, &test_value);
+        assert_eq!(error, test_error);
     }
 
     #[test]
