@@ -1,5 +1,6 @@
 use crate::{controller::password, model, repository, Error};
 
+#[derive(Eq, PartialEq, Debug)]
 pub enum Results {
     Valid(model::Credentials),
     Suspended,
@@ -35,23 +36,82 @@ pub async fn authorize<
 
 #[cfg(test)]
 mod authorization_test {
-    use crate::{
-        model,
-        utilities::test::mock::{MockCredentials, MockLoginHistory},
-    };
+    use super::*;
+    use crate::{model, utilities::test::mock::service_state};
+    use std::time::SystemTime;
 
-    fn setup_state() -> model::ServiceState<
-        model::DatabaseConnection,
-        MockLoginHistory<model::DatabaseConnection>,
-        MockCredentials<model::DatabaseConnection>,
-    > {
-        let mock_login_history = MockLoginHistory::<model::DatabaseConnection>::new();
-        let mock_credentials = MockCredentials::<model::DatabaseConnection>::new();
-        model::ServiceState::new(mock_login_history, mock_credentials)
+    fn fake_credentials() -> model::Credentials {
+        model::Credentials {
+            id: 1,
+            email: "email".to_string(),
+            name: "joey".to_string(),
+            hash: "hash".to_string(),
+            created_at: SystemTime::now(),
+            updated_at: SystemTime::now(),
+            deleted_at: None,
+            locked_at: None,
+        }
     }
 
     #[actix_rt::test]
     async fn returns_suspended_if_the_auth_record_has_been_suspended() {
-        // TODO
+        let mut state = service_state();
+        let request = model::NameRequest {
+            password: "king kong".to_string(),
+            name: "dude man".to_string(),
+        };
+        let mut credentials = fake_credentials();
+        credentials.locked_at = Some(SystemTime::now());
+        state.credentials.by_name.returns(Some(credentials));
+        let result = authorize(&request, &state.credentials, &state.login_history)
+            .await
+            .expect("error occurred in authorize");
+        assert_eq!(result, Results::Suspended);
+    }
+
+    #[actix_rt::test]
+    async fn returns_none_if_no_record_is_found() {
+        let mut state = service_state();
+        let request = model::NameRequest {
+            password: "king kong".to_string(),
+            name: "dude man".to_string(),
+        };
+        state.credentials.by_name.returns(None);
+        let result = authorize(&request, &state.credentials, &state.login_history)
+            .await
+            .expect("error occurred in authorize");
+        assert_eq!(result, Results::None);
+    }
+
+    #[actix_rt::test]
+    async fn returns_invalid_if_credentials_dont_match() {
+        let mut state = service_state();
+        let request = model::NameRequest {
+            password: "king kong".to_string(),
+            name: "dude man".to_string(),
+        };
+        let record = fake_credentials();
+        state.login_history.suspend.returns(());
+        state.credentials.by_name.returns(Some(record));
+        let result = authorize(&request, &state.credentials, &state.login_history)
+            .await
+            .expect("error occurred in authorize");
+        assert_eq!(result, Results::Invalid);
+    }
+
+    #[actix_rt::test]
+    async fn calls_suspend_on_a_user_if_their_credentials_are_invalid() {
+        let mut state = service_state();
+        let request = model::NameRequest {
+            password: "king kong".to_string(),
+            name: "dude man".to_string(),
+        };
+        let record = fake_credentials();
+        state.login_history.suspend.returns(());
+        state.credentials.by_name.returns(Some(record));
+        authorize(&request, &state.credentials, &state.login_history)
+            .await
+            .expect("error occurred in authorize");
+        assert_eq!(state.login_history.suspend.times_called(), 1);
     }
 }

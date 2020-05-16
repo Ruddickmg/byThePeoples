@@ -15,12 +15,11 @@ impl Count {
         let count = _Count { value: 0 };
         Count(Arc::new(RwLock::new(count)))
     }
-    pub fn increment(&self) -> usize {
+    pub fn increment(&self) {
         self.0
             .write()
             .expect("Failed to acquire a write lock on node")
             .value += 1;
-        self.get()
     }
     pub fn get(&self) -> usize {
         self.0.read().unwrap().value
@@ -32,7 +31,6 @@ pub struct Method<T: Clone + std::fmt::Debug, E: Clone + std::fmt::Debug> {
     return_values: Vec<Option<T>>,
     errors: Vec<Option<E>>,
     method_name: String,
-    calls: Count,
     call_number: Count,
 }
 
@@ -61,7 +59,6 @@ impl<T: Clone + std::fmt::Debug, E: Clone + std::fmt::Debug> Method<T, E> {
             method_name: String::from(method),
             return_values: vec![],
             errors: vec![],
-            calls: Count::new(),
             call_number: Count::new(),
         }
     }
@@ -76,7 +73,7 @@ impl<T: Clone + std::fmt::Debug, E: Clone + std::fmt::Debug> Method<T, E> {
         self
     }
     pub fn times_called(&self) -> usize {
-        self.calls.get()
+        self.call_number.get()
     }
     pub fn call(&self) -> Result<T, E> {
         self.handle_call()
@@ -87,14 +84,14 @@ impl<T: Clone + std::fmt::Debug, E: Clone + std::fmt::Debug> Method<T, E> {
 }
 
 #[cfg(test)]
-mod tests {
+mod mocker_tests {
     use super::*;
 
     #[derive(Clone, Eq, PartialEq, Debug)]
     struct TestStruct;
 
     struct Container<T: Clone + std::fmt::Debug> {
-        method: Method<T, &'static str>,
+        pub method: Method<T, &'static str>,
     }
 
     impl<T: Clone + std::fmt::Debug> Container<T> {
@@ -209,5 +206,27 @@ mod tests {
     #[should_panic]
     fn it_panics_if_call_mut_is_called_and_there_are_no_values_to_return() {
         Container::<TestStruct>::new().get_mut();
+    }
+
+    #[test]
+    fn it_records_the_number_of_times_the_call_method_was_called() {
+        let test_value = TestStruct;
+        let test_value2 = TestStruct;
+        let mut container: Container<&TestStruct> = Container::new();
+        container.method.returns(&test_value).returns(&test_value2);
+        let _result = container.get().unwrap();
+        let result2 = container.get().unwrap();
+        assert_eq!(container.method.times_called(), 2);
+    }
+
+    #[test]
+    fn it_records_the_number_of_times_the_call_mut_method_was_called() {
+        let test_value = TestStruct;
+        let test_value2 = TestStruct;
+        let mut container: Container<&TestStruct> = Container::new();
+        container.method.returns(&test_value).returns(&test_value2);
+        let _result = container.get_mut().unwrap();
+        let result2 = container.get_mut().unwrap();
+        assert_eq!(container.method.times_called(), 2);
     }
 }

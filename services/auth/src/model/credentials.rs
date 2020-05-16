@@ -16,7 +16,7 @@ pub mod query {
         "UPDATE auth.credentials SET locked_at = CURRENT_TIMESTAMP WHERE id = $1";
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Credentials {
     pub id: CredentialId,
     pub email: String,
