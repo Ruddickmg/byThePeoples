@@ -35,5 +35,23 @@ pub async fn authorize<
 
 #[cfg(test)]
 mod authorization_test {
-    use crate::utilities::test::mock::MockCredentials;
+    use crate::{
+        model,
+        utilities::test::mock::{MockCredentials, MockLoginHistory},
+    };
+
+    fn setup_state() -> model::ServiceState<
+        model::DatabaseConnection,
+        MockLoginHistory<model::DatabaseConnection>,
+        MockCredentials<model::DatabaseConnection>,
+    > {
+        let mock_login_history = MockLoginHistory::<model::DatabaseConnection>::new();
+        let mock_credentials = MockCredentials::<model::DatabaseConnection>::new();
+        model::ServiceState::new(mock_login_history, mock_credentials)
+    }
+
+    #[actix_rt::test]
+    async fn returns_suspended_if_the_auth_record_has_been_suspended() {
+        // TODO
+    }
 }

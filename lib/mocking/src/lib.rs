@@ -33,35 +33,13 @@ pub struct Method<T: Clone + std::fmt::Debug, E: Clone + std::fmt::Debug> {
     errors: Vec<Option<E>>,
     method_name: String,
     calls: Count,
-    call: Count,
+    call_number: Count,
 }
 
 impl<T: Clone + std::fmt::Debug, E: Clone + std::fmt::Debug> Method<T, E> {
-    pub fn new(method: &str) -> Method<T, E> {
-        Method {
-            method_name: String::from(method),
-            return_values: vec![],
-            errors: vec![],
-            calls: Count::new(),
-            call: Count::new(),
-        }
-    }
-    pub fn returns(&mut self, value: T) -> &mut Method<T, E> {
-        self.return_values.push(Some(value));
-        self.errors.push(None);
-        self
-    }
-    pub fn throws_error(&mut self, error: E) -> &mut Method<T, E> {
-        self.errors.push(Some(error));
-        self.return_values.push(None);
-        self
-    }
-    pub fn times_called(&self) -> usize {
-        self.calls.get()
-    }
     fn handle_call(&self) -> Result<T, E> {
-        let call = self.call.get();
-        self.call.increment();
+        let call = self.call_number.get();
+        self.call_number.increment();
         let error = self.errors.get(call).map_or(None, |e| e.clone());
         let return_value = self.return_values.get(call).map_or(None, |v| v.clone());
         self.panic_if_out_of_bounds(&return_value, &error);
@@ -77,6 +55,28 @@ impl<T: Clone + std::fmt::Debug, E: Clone + std::fmt::Debug> Method<T, E> {
                 self.method_name
             ))
         }
+    }
+    pub fn new(method: &str) -> Method<T, E> {
+        Method {
+            method_name: String::from(method),
+            return_values: vec![],
+            errors: vec![],
+            calls: Count::new(),
+            call_number: Count::new(),
+        }
+    }
+    pub fn returns(&mut self, value: T) -> &mut Method<T, E> {
+        self.return_values.push(Some(value));
+        self.errors.push(None);
+        self
+    }
+    pub fn throws_error(&mut self, error: E) -> &mut Method<T, E> {
+        self.errors.push(Some(error));
+        self.return_values.push(None);
+        self
+    }
+    pub fn times_called(&self) -> usize {
+        self.calls.get()
     }
     pub fn call(&self) -> Result<T, E> {
         self.handle_call()

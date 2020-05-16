@@ -10,7 +10,7 @@ pub struct CredentialsRepository<T: model::Database> {
     db: T,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Status {
     Deleted,
     Exists,

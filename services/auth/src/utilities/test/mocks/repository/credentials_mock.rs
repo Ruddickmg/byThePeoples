@@ -1,4 +1,4 @@
-use crate::{model, model::credentials, repository, Error};
+use crate::{model, repository, Error};
 use async_trait::async_trait;
 use serde::export::PhantomData;
 
@@ -10,12 +10,12 @@ type MockedCredentials = mocking::Method<model::Credentials, Error>;
 
 #[derive(Clone)]
 pub struct MockCredentials<T: model::Database> {
-    by_name: MockedOptionCredentials,
-    by_email: MockedOptionCredentials,
-    get_status: MockedStatusResult,
-    update_credentials: MockedCredentials,
-    save_credentials: MockedCountResult,
-    mark_as_deleted_by_email: MockedCountResult,
+    pub by_name: MockedOptionCredentials,
+    pub by_email: MockedOptionCredentials,
+    pub get_status: MockedStatusResult,
+    pub update_credentials: MockedCredentials,
+    pub save_credentials: MockedCountResult,
+    pub mark_as_deleted_by_email: MockedCountResult,
     phantom: PhantomData<T>,
 }
 
@@ -36,55 +36,55 @@ impl<T: model::Database> MockCredentials<T> {
         }
     }
     pub async fn by_name(&self, _name: &str) -> CredentialResults {
-        self.by_name.call_ref()
+        self.by_name.call()
     }
     pub async fn by_email(&self, _email: &str) -> CredentialResults {
-        self.by_email.call_ref()
+        self.by_email.call()
     }
     pub async fn get_status(
         &self,
         _credentials: &model::FullRequest,
     ) -> Result<repository::Status, Error> {
-        self.get_status.call_ref()
+        self.get_status.call()
     }
     pub async fn update_credentials(
         &self,
         _credentials: &model::Credentials,
     ) -> Result<model::Credentials, Error> {
-        self.update_credentials.call_ref()
+        self.update_credentials.call()
     }
     pub async fn save_credentials(&self, _credentials: &model::FullRequest) -> Result<i32, Error> {
-        self.save_credentials.call_ref()
+        self.save_credentials.call()
     }
     pub async fn mark_as_deleted_by_email(&mut self, _email: &str) -> Result<i32, Error> {
-        self.mark_as_deleted_by_email.call_ref()
+        self.mark_as_deleted_by_email.call()
     }
 }
 
 #[async_trait]
 impl<T: model::Database> repository::Credentials<T> for MockCredentials<T> {
     async fn by_name(&self, _name: &str) -> CredentialResults {
-        self.by_name.call_ref()
+        self.by_name.call()
     }
     async fn by_email(&self, _email: &str) -> CredentialResults {
-        self.by_email.call_ref()
+        self.by_email.call()
     }
     async fn get_status(
         &self,
         _credentials: &model::FullRequest,
     ) -> Result<repository::Status, Error> {
-        self.get_status.call_ref()
+        self.get_status.call()
     }
     async fn update_credentials(
         &self,
         _credentials: &model::Credentials,
     ) -> Result<model::Credentials, Error> {
-        self.update_credentials.call_ref()
+        self.update_credentials.call()
     }
     async fn save_credentials(&self, _credentials: &model::FullRequest) -> Result<i32, Error> {
-        self.save_credentials.call_ref()
+        self.save_credentials.call()
     }
     async fn mark_as_deleted_by_email(&self, _email: &str) -> Result<i32, Error> {
-        self.mark_as_deleted_by_email.call_ref()
+        self.mark_as_deleted_by_email.call()
     }
 }

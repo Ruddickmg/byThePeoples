@@ -5,6 +5,7 @@ use crate::{
 };
 use std::time::Duration;
 
+#[derive(Clone, Debug)]
 pub struct FailedLogin {
     pub user_id: CredentialId,
     pub updated_at: database::Timestamp,
