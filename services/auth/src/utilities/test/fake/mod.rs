@@ -3,9 +3,11 @@ use crate::model;
 use fake::{faker::internet::en as internet, Fake};
 
 mod credentials;
+mod failed_login;
 mod request;
 
 pub use credentials::*;
+pub use failed_login::*;
 pub use request::*;
 
 const MAX_FAKE_PASSWORD_LENGTH: usize = 20;
