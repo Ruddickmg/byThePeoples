@@ -18,10 +18,8 @@ pub async fn authenticate_credentials<
     {
         Ok(stored_credentials) => match stored_credentials {
             authorization::Results::Valid(credentials) => {
-                match jwt::set_token(HttpResponse::Ok(), credentials) {
-                    Ok(authenticated_response) => authenticated_response,
-                    Err(_) => HttpResponse::InternalServerError().finish(),
-                }
+                jwt::set_token(HttpResponse::Ok(), credentials)
+                    .unwrap_or(HttpResponse::InternalServerError().finish())
             }
             _ => HttpResponse::Unauthorized().finish(),
         },

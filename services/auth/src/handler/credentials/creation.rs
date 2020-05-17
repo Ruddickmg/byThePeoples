@@ -13,25 +13,18 @@ pub async fn save_credentials<
     json: web::Json<model::FullRequest>,
 ) -> HttpResponse {
     let user_credentials = model::FullRequest::from(json);
-    if let Ok(result) = credentials::create(&state.credentials, &user_credentials).await {
-        match result {
+    match credentials::create(&state.credentials, &user_credentials).await {
+        Ok(result) => match result {
             credentials::SaveResults::Conflict => HttpResponse::Conflict().finish(),
-            credentials::SaveResults::WeakPassword(problems) => {
-                if let Ok(json) = serde_json::to_string(&problems) {
+            credentials::SaveResults::WeakPassword(problems) => serde_json::to_string(&problems)
+                .map_or(HttpResponse::InternalServerError().finish(), |json| {
                     HttpResponse::Forbidden().json2(&json)
-                } else {
-                    HttpResponse::InternalServerError().finish()
-                }
-            }
+                }),
             credentials::SaveResults::Success(stored_credentials) => {
-                if let Ok(response) = jwt::set_token(HttpResponse::Created(), stored_credentials) {
-                    response
-                } else {
-                    HttpResponse::InternalServerError().finish()
-                }
+                jwt::set_token(HttpResponse::Created(), stored_credentials)
+                    .unwrap_or(HttpResponse::InternalServerError().finish())
             }
-        }
-    } else {
-        HttpResponse::InternalServerError().finish()
+        },
+        Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }

@@ -17,17 +17,14 @@ pub async fn update_credentials<
         auth,
         credentials: updates,
     } = updated_credentials;
-    if let Ok(status) =
-        credentials::update(&state.credentials, &state.login_history, &auth, &updates).await
-    {
-        match status {
+    match credentials::update(&state.credentials, &state.login_history, &auth, &updates).await {
+        Ok(status) => match status {
             credentials::UpdateResults::Success(credentials) => {
                 jwt::set_token(HttpResponse::Ok(), credentials)
                     .unwrap_or(HttpResponse::InternalServerError().finish())
             }
             _ => HttpResponse::Unauthorized().finish(),
-        }
-    } else {
-        HttpResponse::InternalServerError().finish()
+        },
+        Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
