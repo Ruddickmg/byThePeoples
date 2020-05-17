@@ -5,11 +5,8 @@ const PRODUCTION: &str = "production";
 const STAGING: &str = "staging";
 const DEVELOPMENT: &str = "development";
 
-pub fn env_or_default(variable_name: &str, default: &str) -> String {
-    match env::var(variable_name) {
-        Ok(value) => value,
-        Err(_) => format!("{}", default),
-    }
+pub fn env_or_default<T: std::fmt::Display>(variable_name: &str, default: T) -> String {
+    env::var(variable_name).unwrap_or(format!("{}", default))
 }
 
 fn check_environment(target: &str) -> bool {

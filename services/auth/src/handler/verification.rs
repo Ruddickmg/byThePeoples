@@ -26,3 +26,6 @@ pub async fn authenticate_credentials<
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
+
+#[cfg(test)]
+mod verification_handler_test {}
