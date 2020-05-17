@@ -1,6 +1,6 @@
 extern crate argonautica;
 
-use crate::{configuration::hash, Error, InternalServerError};
+use crate::{configuration::hash, Error};
 use argonautica::{Hasher, Verifier};
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -29,14 +29,16 @@ impl fmt::Display for Strength {
 pub fn hash_password(password: &str) -> Result<String, Error> {
     let mut hasher = Hasher::default();
     Ok(hasher
+        .configure_lanes(hash::lanes())
+        .configure_iterations(hash::time_cost())
+        .configure_memory_size(hash::memory_usage())
         .with_password(password)
         .with_secret_key(hash::secret())
         .hash()?)
 }
 
 pub fn authenticate(password: &str, hash: &str) -> Result<bool, Error> {
-    let mut verifier = Verifier::default();
-    match verifier
+    match Verifier::default()
         .with_hash(hash)
         .with_password(password)
         .with_secret_key(hash::secret())
@@ -45,14 +47,12 @@ pub fn authenticate(password: &str, hash: &str) -> Result<bool, Error> {
         Ok(result) => Ok(result),
         Err(error) => match error.kind() {
             argonautica::ErrorKind::HashDecodeError => Ok(false),
-            _ => Err(Error::InternalServerError(InternalServerError::Unknown(
-                format!("{:#?}", error),
-            ))),
+            _ => Err(Error::InternalServerError(format!("{:#?}", error))),
         },
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub struct PasswordIssues {
     message: String,
     warning: Option<String>,

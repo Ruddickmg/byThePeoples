@@ -32,9 +32,9 @@ pub fn generate_token(credentials: Credentials) -> Result<String, Error> {
         &EncodingKey::from_secret(&jwt::secret().as_ref()),
     ) {
         Ok(jwt) => Ok(jwt),
-        Err(_) => Err(Error::from(actix_web::error::ErrorInternalServerError(
-            "Failed to generate JWT",
-        ))),
+        Err(_) => Err(Error::InternalServerError(
+            "Failed to generate JWT".to_string(),
+        )),
     }
 }
 

@@ -1,97 +1,94 @@
-use crate::{model, model::credentials, Error};
+use crate::{model, repository, Error};
+use async_trait::async_trait;
+use serde::export::PhantomData;
 
 type CredentialResults = Result<Option<model::Credentials>, Error>;
+type MockedOptionCredentials = mocking::Method<Option<model::Credentials>, Error>;
+type MockedStatusResult = mocking::Method<repository::Status, Error>;
+type MockedCountResult = mocking::Method<i32, Error>;
+type MockedCredentials = mocking::Method<model::Credentials, Error>;
 
 #[derive(Clone)]
-pub struct Credentials<T: model::Database> {
-    db: T,
+pub struct MockCredentials<T: model::Database> {
+    pub by_name: MockedOptionCredentials,
+    pub by_email: MockedOptionCredentials,
+    pub get_status: MockedStatusResult,
+    pub update_credentials: MockedCredentials,
+    pub save_credentials: MockedCredentials,
+    pub mark_as_deleted_by_email: MockedCountResult,
+    phantom: PhantomData<T>,
 }
 
-pub enum Status {
-    Deleted,
-    Exists,
-    None,
-}
-
-impl<T: model::Database> Credentials<T> {
-    pub fn new(db: T) -> Credentials<T> {
-        Credentials { db }
-    }
-    async fn get_by_single_param(&self, query: &str, param: &str) -> CredentialResults {
-        let client = self.db.client().await?;
-        let statement = client.prepare(query).await?;
-        let mut results = client
-            .query::<model::Credentials>(&statement, &[&param])
-            .await?;
-        if results.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(results.remove(0)))
+impl<T: model::Database> MockCredentials<T> {
+    pub fn new() -> MockCredentials<T> {
+        MockCredentials {
+            by_name: MockedOptionCredentials::new("repository::Credentials.by_name()"),
+            by_email: MockedOptionCredentials::new("repository::Credentials.by_email()"),
+            get_status: MockedStatusResult::new("repository::Credentials.get_status()"),
+            update_credentials: MockedCredentials::new(
+                "repository::Credentials.update_credentials()",
+            ),
+            save_credentials: MockedCredentials::new("repository::Credentials.save_credentials()"),
+            mark_as_deleted_by_email: MockedCountResult::new(
+                "repository::Credentials.mark_as_deleted_by_email()",
+            ),
+            phantom: PhantomData,
         }
     }
-    pub async fn by_name(&self, name: &str) -> CredentialResults {
-        self.get_by_single_param(credentials::query::NAME, name)
-            .await
+    pub async fn by_name(&self, _name: &str) -> CredentialResults {
+        self.by_name.call()
     }
-    pub async fn by_email(&self, email: &str) -> CredentialResults {
-        self.get_by_single_param(credentials::query::EMAIL, email)
-            .await
+    pub async fn by_email(&self, _email: &str) -> CredentialResults {
+        self.by_email.call()
     }
-    pub async fn get_status(&self, credentials: &model::FullRequest) -> Result<Status, Error> {
-        let client = self.db.client().await?;
-        let model::FullRequest { name, email, .. } = credentials;
-        let stmt = client.prepare(credentials::query::DELETED_AT).await?;
-        let stored_credentials = client
-            .query::<credentials::DeletedAt>(&stmt, &[&name, &email])
-            .await?;
-        if stored_credentials.is_empty() {
-            Ok(Status::None)
-        } else {
-            Ok(match stored_credentials.first() {
-                Some(_) => Status::Deleted,
-                None => Status::Exists,
-            })
-        }
+    pub async fn get_status(
+        &self,
+        _credentials: &model::FullRequest,
+    ) -> Result<repository::Status, Error> {
+        self.get_status.call()
     }
     pub async fn update_credentials(
         &self,
-        credentials: &model::Credentials,
+        _credentials: &model::Credentials,
     ) -> Result<model::Credentials, Error> {
-        let model::Credentials {
-            name,
-            email,
-            hash,
-            id,
-            ..
-        } = credentials;
-        let client = self.db.client().await?;
-        let stmt = client.prepare(credentials::query::UPDATE).await?;
-        Ok(client
-            .query::<model::Credentials>(&stmt, &[&name, &hash, &email, &id])
-            .await?
-            .remove(0))
+        self.update_credentials.call()
     }
-    pub async fn save_credentials(&self, credentials: &model::FullRequest) -> Result<i32, Error> {
-        let model::FullRequest {
-            name,
-            email,
-            password,
-        } = credentials;
-        let client = self.db.client().await?;
-        let stmt = client.prepare(credentials::query::SAVE).await?;
-        Ok(client
-            .query::<credentials::AffectedRows>(&stmt, &[&name, &email, &password])
-            .await?
-            .first()
-            .map_or(0, |affected| affected.count))
+    pub async fn save_credentials(
+        &self,
+        _name: &str,
+        _email: &str,
+    ) -> Result<model::Credentials, Error> {
+        self.save_credentials.call()
     }
-    pub async fn mark_as_deleted_by_email(&self, email: &str) -> Result<i32, Error> {
-        let client = self.db.client().await?;
-        let stmt = client.prepare(credentials::query::DELETE_BY_EMAIL).await?;
-        Ok(client
-            .query::<credentials::AffectedRows>(&stmt, &[&email])
-            .await?
-            .first()
-            .map_or(0, |affected| affected.count))
+    pub async fn mark_as_deleted_by_email(&mut self, _email: &str) -> Result<i32, Error> {
+        self.mark_as_deleted_by_email.call()
+    }
+}
+
+#[async_trait]
+impl<T: model::Database> repository::Credentials<T> for MockCredentials<T> {
+    async fn by_name(&self, _name: &str) -> CredentialResults {
+        self.by_name.call()
+    }
+    async fn by_email(&self, _email: &str) -> CredentialResults {
+        self.by_email.call()
+    }
+    async fn get_status(&self, _name: &str, _email: &str) -> Result<repository::Status, Error> {
+        self.get_status.call()
+    }
+    async fn update_credentials(
+        &self,
+        _credentials: &model::Credentials,
+    ) -> Result<model::Credentials, Error> {
+        self.update_credentials.call()
+    }
+    async fn save_credentials(
+        &self,
+        _credentials: &model::FullRequest,
+    ) -> Result<model::Credentials, Error> {
+        self.save_credentials.call()
+    }
+    async fn mark_as_deleted_by_email(&self, _email: &str) -> Result<i32, Error> {
+        self.mark_as_deleted_by_email.call()
     }
 }

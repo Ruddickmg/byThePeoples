@@ -10,6 +10,7 @@ pub struct CredentialsRepository<T: model::Database> {
     db: T,
 }
 
+#[derive(Clone, Debug)]
 pub enum Status {
     Deleted,
     Exists,
@@ -40,9 +41,8 @@ impl<T: model::Database> CredentialsRepository<T> {
         self.get_by_single_param(credentials::query::EMAIL, email)
             .await
     }
-    pub async fn get_status(&self, credentials: &model::FullRequest) -> Result<Status, Error> {
+    pub async fn get_status(&self, name: &str, email: &str) -> Result<Status, Error> {
         let client = self.db.client().await?;
-        let model::FullRequest { name, email, .. } = credentials;
         let stmt = client.prepare(credentials::query::DELETED_AT).await?;
         let stored_credentials = client
             .query::<credentials::DeletedAt>(&stmt, &[&name, &email])
@@ -74,7 +74,10 @@ impl<T: model::Database> CredentialsRepository<T> {
             .await?
             .remove(0))
     }
-    pub async fn save_credentials(&self, credentials: &model::FullRequest) -> Result<i32, Error> {
+    pub async fn save_credentials(
+        &self,
+        credentials: &model::FullRequest,
+    ) -> Result<model::Credentials, Error> {
         let model::FullRequest {
             name,
             email,
@@ -83,10 +86,9 @@ impl<T: model::Database> CredentialsRepository<T> {
         let client = self.db.client().await?;
         let stmt = client.prepare(credentials::query::SAVE).await?;
         Ok(client
-            .query::<credentials::AffectedRows>(&stmt, &[&name, &email, &password])
+            .query::<model::Credentials>(&stmt, &[&name, &email, &password])
             .await?
-            .first()
-            .map_or(0, |affected| affected.count))
+            .remove(0))
     }
     pub async fn mark_as_deleted_by_email(&self, email: &str) -> Result<i32, Error> {
         let client = self.db.client().await?;
@@ -101,32 +103,22 @@ impl<T: model::Database> CredentialsRepository<T> {
 
 #[async_trait]
 pub trait Credentials<T: model::Database>: Clone + Send + Sync {
-    async fn get_by_single_param(&self, query: &str, param: &str) -> CredentialResults;
     async fn by_name(&self, name: &str) -> CredentialResults;
     async fn by_email(&self, email: &str) -> CredentialResults;
-    async fn get_status(&self, credentials: &model::FullRequest) -> Result<Status, Error>;
+    async fn get_status(&self, name: &str, email: &str) -> Result<Status, Error>;
     async fn update_credentials(
         &self,
         credentials: &model::Credentials,
     ) -> Result<model::Credentials, Error>;
-    async fn save_credentials(&self, credentials: &model::FullRequest) -> Result<i32, Error>;
+    async fn save_credentials(
+        &self,
+        credentials: &model::FullRequest,
+    ) -> Result<model::Credentials, Error>;
     async fn mark_as_deleted_by_email(&self, email: &str) -> Result<i32, Error>;
 }
 
 #[async_trait]
 impl<T: model::Database> Credentials<T> for CredentialsRepository<T> {
-    async fn get_by_single_param(&self, query: &str, param: &str) -> CredentialResults {
-        let client = self.db.client().await?;
-        let statement = client.prepare(query).await?;
-        let mut results = client
-            .query::<model::Credentials>(&statement, &[&param])
-            .await?;
-        if results.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(results.remove(0)))
-        }
-    }
     async fn by_name(&self, name: &str) -> CredentialResults {
         self.get_by_single_param(credentials::query::NAME, name)
             .await
@@ -135,9 +127,8 @@ impl<T: model::Database> Credentials<T> for CredentialsRepository<T> {
         self.get_by_single_param(credentials::query::EMAIL, email)
             .await
     }
-    async fn get_status(&self, credentials: &model::FullRequest) -> Result<Status, Error> {
+    async fn get_status(&self, name: &str, email: &str) -> Result<Status, Error> {
         let client = self.db.client().await?;
-        let model::FullRequest { name, email, .. } = credentials;
         let stmt = client.prepare(credentials::query::DELETED_AT).await?;
         let stored_credentials = client
             .query::<credentials::DeletedAt>(&stmt, &[&name, &email])
@@ -169,7 +160,10 @@ impl<T: model::Database> Credentials<T> for CredentialsRepository<T> {
             .await?
             .remove(0))
     }
-    async fn save_credentials(&self, credentials: &model::FullRequest) -> Result<i32, Error> {
+    async fn save_credentials(
+        &self,
+        credentials: &model::FullRequest,
+    ) -> Result<model::Credentials, Error> {
         let model::FullRequest {
             name,
             email,
@@ -178,10 +172,9 @@ impl<T: model::Database> Credentials<T> for CredentialsRepository<T> {
         let client = self.db.client().await?;
         let stmt = client.prepare(credentials::query::SAVE).await?;
         Ok(client
-            .query::<credentials::AffectedRows>(&stmt, &[&name, &email, &password])
+            .query::<model::Credentials>(&stmt, &[&name, &email, &password])
             .await?
-            .first()
-            .map_or(0, |affected| affected.count))
+            .remove(0))
     }
     async fn mark_as_deleted_by_email(&self, email: &str) -> Result<i32, Error> {
         let client = self.db.client().await?;
