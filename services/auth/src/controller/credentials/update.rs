@@ -28,20 +28,21 @@ pub async fn update<
             Ok(UpdateResults::Suspended)
         } else {
             if password::authenticate(&auth_details.password, &stored_credentials.hash)? {
-                let updated_credentials = credentials
-                    .update_credentials(&model::Credentials {
-                        name: name.as_ref().map_or(stored_credentials.name, String::from),
-                        email: email
-                            .as_ref()
-                            .map_or(stored_credentials.email, String::from),
-                        hash: match &password {
-                            Some(p) => password::hash_password(p)?,
-                            None => stored_credentials.hash,
-                        },
-                        ..stored_credentials
-                    })
-                    .await?;
-                Ok(UpdateResults::Success(updated_credentials))
+                Ok(UpdateResults::Success(
+                    credentials
+                        .update_credentials(&model::Credentials {
+                            name: name.as_ref().map_or(stored_credentials.name, String::from),
+                            email: email
+                                .as_ref()
+                                .map_or(stored_credentials.email, String::from),
+                            hash: match &password {
+                                Some(p) => password::hash_password(p)?,
+                                None => stored_credentials.hash,
+                            },
+                            ..stored_credentials
+                        })
+                        .await?,
+                ))
             } else {
                 login_history.suspend(&stored_credentials.id).await?;
                 Ok(UpdateResults::Unauthorized)
