@@ -40,7 +40,7 @@ pub async fn save_credentials<
 // mod credentials_handler_tests {
 //     use super::*;
 //     use crate::{
-//         configuration::database::TEST_DATABASE_CONFIG, model, utilities::test as test_helper,
+//         configuration::database::TEST_DATABASE_CONFIG, fake, utilities::test as test_helper,
 //     };
 //     use actix_web::{http, test, FromRequest};
 //
@@ -49,16 +49,16 @@ pub async fn save_credentials<
 //     #[actix_rt::test]
 //     async fn save_credentials_success_status() {
 //         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, password) = test_helper::fake_credentials();
-//         let request_data = model::FullRequest::new(&name, &email, &password);
+//         let request_data = fake::FullRequest::new(&name, &email, &password);
 //         let (req, mut payload) = test::TestRequest::post()
 //             .set_json(&request_data)
 //             .to_http_parts();
-//         let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::FullRequest>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         let resp = save_credentials(request_state, json).await;
@@ -69,16 +69,16 @@ pub async fn save_credentials<
 //     #[actix_rt::test]
 //     async fn save_credentials_creates_record() {
 //         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, password) = test_helper::fake_credentials();
-//         let request_data = model::FullRequest::new(&name, &email, &password);
+//         let request_data = fake::FullRequest::new(&name, &email, &password);
 //         let (req, mut payload) = test::TestRequest::post()
 //             .set_json(&request_data)
 //             .to_http_parts();
-//         let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::FullRequest>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         save_credentials(request_state, json).await;
@@ -95,16 +95,16 @@ pub async fn save_credentials<
 //     #[actix_rt::test]
 //     async fn save_credentials_sets_auth_token() {
 //         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, password) = test_helper::fake_credentials();
-//         let request_data = model::FullRequest::new(&name, &email, &password);
+//         let request_data = fake::FullRequest::new(&name, &email, &password);
 //         let (req, mut payload) = test::TestRequest::post()
 //             .set_json(&request_data)
 //             .to_http_parts();
-//         let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::FullRequest>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         let resp = save_credentials(request_state, json).await;
@@ -115,18 +115,18 @@ pub async fn save_credentials<
 //     #[actix_rt::test]
 //     async fn returns_conflict_if_email_exists() {
 //         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, password) = test_helper::fake_credentials();
-//         let mut request_data = model::FullRequest::new(&name, &email, &password);
+//         let mut request_data = fake::FullRequest::new(&name, &email, &password);
 //         helper.add_credentials(&request_data).await;
 //         request_data.name = String::from("different name");
 //         let (req, mut payload) = test::TestRequest::post()
 //             .set_json(&request_data)
 //             .to_http_parts();
-//         let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::FullRequest>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         let resp = save_credentials(request_state, json).await;
@@ -137,18 +137,18 @@ pub async fn save_credentials<
 //     #[actix_rt::test]
 //     async fn does_not_set_auth_token_if_email_exists() {
 //         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, password) = test_helper::fake_credentials();
-//         let mut request_data = model::FullRequest::new(&name, &email, &password);
+//         let mut request_data = fake::FullRequest::new(&name, &email, &password);
 //         helper.add_credentials(&request_data).await;
 //         request_data.name = String::from("different name");
 //         let (req, mut payload) = test::TestRequest::post()
 //             .set_json(&request_data)
 //             .to_http_parts();
-//         let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::FullRequest>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         let resp = save_credentials(request_state, json).await;
@@ -159,18 +159,18 @@ pub async fn save_credentials<
 //     #[actix_rt::test]
 //     async fn returns_conflict_if_name_exists() {
 //         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, password) = test_helper::fake_credentials();
-//         let mut request_data = model::FullRequest::new(&name, &email, &password);
+//         let mut request_data = fake::FullRequest::new(&name, &email, &password);
 //         helper.add_credentials(&request_data).await;
 //         request_data.email = String::from("different email");
 //         let (req, mut payload) = test::TestRequest::post()
 //             .set_json(&request_data)
 //             .to_http_parts();
-//         let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::FullRequest>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         let resp = save_credentials(request_state, json).await;
@@ -181,18 +181,18 @@ pub async fn save_credentials<
 //     #[actix_rt::test]
 //     async fn does_not_set_auth_token_if_name_exists() {
 //         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, password) = test_helper::fake_credentials();
-//         let mut request_data = model::FullRequest::new(&name, &email, &password);
+//         let mut request_data = fake::FullRequest::new(&name, &email, &password);
 //         helper.add_credentials(&request_data).await;
 //         request_data.email = String::from("different email");
 //         let (req, mut payload) = test::TestRequest::post()
 //             .set_json(&request_data)
 //             .to_http_parts();
-//         let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::FullRequest>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         let resp = save_credentials(request_state, json).await;
@@ -202,16 +202,16 @@ pub async fn save_credentials<
 //
 //     #[actix_rt::test]
 //     async fn returns_forbidden_if_password_is_too_weak() {
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, ..) = test_helper::fake_credentials();
-//         let request_data = model::FullRequest::new(&name, &email, WEAK_PASSWORD);
+//         let request_data = fake::FullRequest::new(&name, &email, WEAK_PASSWORD);
 //         let (req, mut payload) = test::TestRequest::post()
 //             .set_json(&request_data)
 //             .to_http_parts();
-//         let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::FullRequest>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         let resp = save_credentials(request_state, json).await;
@@ -220,16 +220,16 @@ pub async fn save_credentials<
 //
 //     #[actix_rt::test]
 //     async fn does_not_set_auth_token_if_password_is_too_weak() {
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, ..) = test_helper::fake_credentials();
-//         let request_data = model::FullRequest::new(&name, &email, WEAK_PASSWORD);
+//         let request_data = fake::FullRequest::new(&name, &email, WEAK_PASSWORD);
 //         let (req, mut payload) = test::TestRequest::post()
 //             .set_json(&request_data)
 //             .to_http_parts();
-//         let json = web::Json::<model::FullRequest>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::FullRequest>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         let resp = save_credentials(request_state, json).await;

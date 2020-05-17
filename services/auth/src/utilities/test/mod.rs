@@ -1,5 +1,4 @@
-#[cfg(test)]
+pub mod fake;
 pub mod mocks;
 
-#[cfg(test)]
 pub use mocks as mock;

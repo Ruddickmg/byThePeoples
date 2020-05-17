@@ -40,7 +40,7 @@ pub async fn update_credentials<
 //             database::TEST_DATABASE_CONFIG, ACCOUNT_LOCK_DURATION_IN_SECONDS,
 //             ALLOWED_FAILED_LOGIN_ATTEMPTS,
 //         },
-//         controller, model,
+//         controller, fake,
 //         utilities::test as test_helper,
 //     };
 //     use actix_web::{http, test, FromRequest};
@@ -52,25 +52,25 @@ pub async fn update_credentials<
 //     #[actix_rt::test]
 //     async fn returns_okay_if_the_update_was_successful() {
 //         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, password) = test_helper::fake_credentials();
 //         let (name2, email2, password2) = test_helper::fake_credentials();
 //         let hashed_password = controller::password::hash_password(&password).unwrap();
-//         let auth_credentials = model::EmailRequest::new(&email, &password);
-//         let updated_credentials = model::CredentialsRequest::new(
+//         let auth_credentials = fake::EmailRequest::new(&email, &password);
+//         let updated_credentials = fake::CredentialsRequest::new(
 //             &Some(name2.clone()),
 //             &Some(email2.clone()),
 //             &Some(password2.clone()),
 //         );
-//         let data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
+//         let data = fake::UpdateCredentials::new(&auth_credentials, &updated_credentials);
 //         helper
-//             .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+//             .add_credentials(&fake::FullRequest::new(&name, &email, &hashed_password))
 //             .await;
 //         let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
-//         let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::UpdateCredentials>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         let resp = update_credentials(request_state, json).await;
@@ -81,25 +81,25 @@ pub async fn update_credentials<
 //     #[actix_rt::test]
 //     async fn sets_updated_auth_token_on_successful_response() {
 //         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, password) = test_helper::fake_credentials();
 //         let (name2, email2, password2) = test_helper::fake_credentials();
 //         let hashed_password = controller::password::hash_password(&password).unwrap();
-//         let auth_credentials = model::EmailRequest::new(&email, &password);
-//         let updated_credentials = model::CredentialsRequest::new(
+//         let auth_credentials = fake::EmailRequest::new(&email, &password);
+//         let updated_credentials = fake::CredentialsRequest::new(
 //             &Some(name2.clone()),
 //             &Some(email2.clone()),
 //             &Some(password2.clone()),
 //         );
-//         let data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
+//         let data = fake::UpdateCredentials::new(&auth_credentials, &updated_credentials);
 //         helper
-//             .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+//             .add_credentials(&fake::FullRequest::new(&name, &email, &hashed_password))
 //             .await;
 //         let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
-//         let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::UpdateCredentials>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         let resp = update_credentials(request_state, json).await;
@@ -110,22 +110,22 @@ pub async fn update_credentials<
 //     #[actix_rt::test]
 //     async fn updates_a_users_name() {
 //         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, password) = test_helper::fake_credentials();
 //         let (name2, email2, password2) = test_helper::fake_credentials();
 //         let hashed_password = controller::password::hash_password(&password).unwrap();
-//         let auth_credentials = model::EmailRequest::new(&email, &password);
+//         let auth_credentials = fake::EmailRequest::new(&email, &password);
 //         let updated_credentials =
-//             model::CredentialsRequest::new(&Some(name2.clone()), &None, &None);
-//         let data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
+//             fake::CredentialsRequest::new(&Some(name2.clone()), &None, &None);
+//         let data = fake::UpdateCredentials::new(&auth_credentials, &updated_credentials);
 //         helper
-//             .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+//             .add_credentials(&fake::FullRequest::new(&name, &email, &hashed_password))
 //             .await;
 //         let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
-//         let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::UpdateCredentials>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         update_credentials(request_state, json).await;
@@ -143,22 +143,22 @@ pub async fn update_credentials<
 //     #[actix_rt::test]
 //     async fn updates_a_users_password() {
 //         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, password) = test_helper::fake_credentials();
 //         let (name2, email2, password2) = test_helper::fake_credentials();
 //         let hashed_password = controller::password::hash_password(&password).unwrap();
-//         let auth_credentials = model::EmailRequest::new(&email, &password);
+//         let auth_credentials = fake::EmailRequest::new(&email, &password);
 //         let updated_credentials =
-//             model::CredentialsRequest::new(&None, &None, &Some(password2.clone()));
-//         let data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
+//             fake::CredentialsRequest::new(&None, &None, &Some(password2.clone()));
+//         let data = fake::UpdateCredentials::new(&auth_credentials, &updated_credentials);
 //         helper
-//             .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+//             .add_credentials(&fake::FullRequest::new(&name, &email, &hashed_password))
 //             .await;
 //         let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
-//         let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::UpdateCredentials>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         update_credentials(request_state, json).await;
@@ -176,22 +176,22 @@ pub async fn update_credentials<
 //     #[actix_rt::test]
 //     async fn updates_a_users_email() {
 //         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, password) = test_helper::fake_credentials();
 //         let (_name2, email2, password2) = test_helper::fake_credentials();
 //         let hashed_password = controller::password::hash_password(&password).unwrap();
-//         let auth_credentials = model::EmailRequest::new(&email, &password);
+//         let auth_credentials = fake::EmailRequest::new(&email, &password);
 //         let updated_credentials =
-//             model::CredentialsRequest::new(&None, &Some(email2.clone()), &None);
-//         let data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
+//             fake::CredentialsRequest::new(&None, &Some(email2.clone()), &None);
+//         let data = fake::UpdateCredentials::new(&auth_credentials, &updated_credentials);
 //         helper
-//             .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+//             .add_credentials(&fake::FullRequest::new(&name, &email, &hashed_password))
 //             .await;
 //         let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
-//         let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::UpdateCredentials>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         update_credentials(request_state, json).await;
@@ -209,20 +209,20 @@ pub async fn update_credentials<
 //     #[actix_rt::test]
 //     async fn returns_unauthorized_if_auth_credentials_are_invalid() {
 //         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, password) = test_helper::fake_credentials();
 //         let hashed_password = controller::password::hash_password(&password).unwrap();
-//         let auth_credentials = model::EmailRequest::new(&email, "Invalid Password");
-//         let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
-//         let data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
+//         let auth_credentials = fake::EmailRequest::new(&email, "Invalid Password");
+//         let updated_credentials = fake::CredentialsRequest::new(&None, &None, &None);
+//         let data = fake::UpdateCredentials::new(&auth_credentials, &updated_credentials);
 //         helper
-//             .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+//             .add_credentials(&fake::FullRequest::new(&name, &email, &hashed_password))
 //             .await;
 //         let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
-//         let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::UpdateCredentials>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         let resp = update_credentials(request_state, json).await;
@@ -233,20 +233,20 @@ pub async fn update_credentials<
 //     #[actix_rt::test]
 //     async fn does_not_set_auth_token_if_unauthorized() {
 //         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, password) = test_helper::fake_credentials();
 //         let hashed_password = controller::password::hash_password(&password).unwrap();
-//         let auth_credentials = model::EmailRequest::new(&email, "Invalid Password");
-//         let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
-//         let data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
+//         let auth_credentials = fake::EmailRequest::new(&email, "Invalid Password");
+//         let updated_credentials = fake::CredentialsRequest::new(&None, &None, &None);
+//         let data = fake::UpdateCredentials::new(&auth_credentials, &updated_credentials);
 //         helper
-//             .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+//             .add_credentials(&fake::FullRequest::new(&name, &email, &hashed_password))
 //             .await;
 //         let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
-//         let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::UpdateCredentials>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         let resp = update_credentials(request_state, json).await;
@@ -256,16 +256,16 @@ pub async fn update_credentials<
 //
 //     #[actix_rt::test]
 //     async fn returns_unauthorized_if_no_associated_record_exists() {
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (_name, email, password) = test_helper::fake_credentials();
-//         let auth_credentials = model::EmailRequest::new(&email, &password);
-//         let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
-//         let data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
+//         let auth_credentials = fake::EmailRequest::new(&email, &password);
+//         let updated_credentials = fake::CredentialsRequest::new(&None, &None, &None);
+//         let data = fake::UpdateCredentials::new(&auth_credentials, &updated_credentials);
 //         let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
-//         let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::UpdateCredentials>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         let resp = update_credentials(request_state, json).await;
@@ -274,16 +274,16 @@ pub async fn update_credentials<
 //
 //     #[actix_rt::test]
 //     async fn doest_not_set_auth_token_if_not_found() {
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (_name, email, password) = test_helper::fake_credentials();
-//         let auth_credentials = model::EmailRequest::new(&email, &password);
-//         let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
-//         let data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
+//         let auth_credentials = fake::EmailRequest::new(&email, &password);
+//         let updated_credentials = fake::CredentialsRequest::new(&None, &None, &None);
+//         let data = fake::UpdateCredentials::new(&auth_credentials, &updated_credentials);
 //         let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
-//         let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::UpdateCredentials>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         let resp = update_credentials(request_state, json).await;
@@ -293,17 +293,17 @@ pub async fn update_credentials<
 //     #[actix_rt::test]
 //     async fn returns_unauthorized_if_a_user_has_been_suspended() {
 //         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, password) = test_helper::fake_credentials();
 //         let hashed_password = controller::password::hash_password(&password).unwrap();
-//         let auth_credentials = model::EmailRequest::new(&email, &password);
-//         let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
-//         let data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
+//         let auth_credentials = fake::EmailRequest::new(&email, &password);
+//         let updated_credentials = fake::CredentialsRequest::new(&None, &None, &None);
+//         let data = fake::UpdateCredentials::new(&auth_credentials, &updated_credentials);
 //         helper
-//             .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+//             .add_credentials(&fake::FullRequest::new(&name, &email, &hashed_password))
 //             .await;
 //         let stored_credentials = helper
 //             .get_credentials_by_name(&name)
@@ -312,7 +312,7 @@ pub async fn update_credentials<
 //             .unwrap();
 //         helper.suspend_user(&stored_credentials.id).await;
 //         let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
-//         let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::UpdateCredentials>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         let resp = update_credentials(request_state, json).await;
@@ -323,17 +323,17 @@ pub async fn update_credentials<
 //     #[actix_rt::test]
 //     async fn suspends_a_user_if_they_have_exceeded_the_allowed_failed_update_attempts() {
 //         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, password) = test_helper::fake_credentials();
 //         let hashed_password = controller::password::hash_password(&password).unwrap();
-//         let auth_credentials = model::EmailRequest::new(&email, "Invalid Password");
-//         let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
-//         let data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
+//         let auth_credentials = fake::EmailRequest::new(&email, "Invalid Password");
+//         let updated_credentials = fake::CredentialsRequest::new(&None, &None, &None);
+//         let data = fake::UpdateCredentials::new(&auth_credentials, &updated_credentials);
 //         helper
-//             .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+//             .add_credentials(&fake::FullRequest::new(&name, &email, &hashed_password))
 //             .await;
 //         let stored_credentials = helper
 //             .get_credentials_by_name(&name)
@@ -344,7 +344,7 @@ pub async fn update_credentials<
 //             .set_login_attempts(&stored_credentials.id, &(ALLOWED_FAILED_LOGIN_ATTEMPTS + 1))
 //             .await;
 //         let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
-//         let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::UpdateCredentials>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         update_credentials(request_state, json).await;
@@ -360,17 +360,17 @@ pub async fn update_credentials<
 // #[actix_rt::test]
 // async fn deletes_the_login_history_once_a_user_has_been_suspended() {
 //     let helper = test_helper::Helper::new().await.unwrap();
-//     let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//     let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //         .await
 //         .unwrap();
-//     let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//     let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //     let (name, email, password) = test_helper::fake_credentials();
 //     let hashed_password = controller::password::hash_password(&password).unwrap();
-//     let auth_credentials = model::EmailRequest::new(&email, "Invalid Password");
-//     let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
-//     let data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
+//     let auth_credentials = fake::EmailRequest::new(&email, "Invalid Password");
+//     let updated_credentials = fake::CredentialsRequest::new(&None, &None, &None);
+//     let data = fake::UpdateCredentials::new(&auth_credentials, &updated_credentials);
 //     helper
-//         .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+//         .add_credentials(&fake::FullRequest::new(&name, &email, &hashed_password))
 //         .await;
 //     let stored_credentials = helper
 //         .get_credentials_by_name(&name)
@@ -381,7 +381,7 @@ pub async fn update_credentials<
 //         .set_login_attempts(&stored_credentials.id, &(ALLOWED_FAILED_LOGIN_ATTEMPTS + 1))
 //         .await;
 //     let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
-//     let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+//     let json = web::Json::<fake::UpdateCredentials>::from_request(&req, &mut payload)
 //         .await
 //         .unwrap();
 //     update_credentials(request_state, json).await;
@@ -396,17 +396,17 @@ pub async fn update_credentials<
 //     #[actix_rt::test]
 //     async fn deletes_login_history_if_previous_update_failures_are_expired() {
 //         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, password) = test_helper::fake_credentials();
 //         let hashed_password = controller::password::hash_password(&password).unwrap();
-//         let auth_credentials = model::EmailRequest::new(&email, "Invalid Password");
-//         let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
-//         let data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
+//         let auth_credentials = fake::EmailRequest::new(&email, "Invalid Password");
+//         let updated_credentials = fake::CredentialsRequest::new(&None, &None, &None);
+//         let data = fake::UpdateCredentials::new(&auth_credentials, &updated_credentials);
 //         helper
-//             .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+//             .add_credentials(&fake::FullRequest::new(&name, &email, &hashed_password))
 //             .await;
 //         let stored_credentials = helper
 //             .get_credentials_by_name(&name)
@@ -416,7 +416,7 @@ pub async fn update_credentials<
 //         let expired_timestamp =
 //             SystemTime::now().sub(Duration::from_secs(ACCOUNT_LOCK_DURATION_IN_SECONDS + 1));
 //         helper
-//             .set_login_history(&model::FailedLogin {
+//             .set_login_history(&fake::FailedLogin {
 //                 user_id: stored_credentials.id,
 //                 updated_at: expired_timestamp,
 //                 created_at: expired_timestamp,
@@ -424,7 +424,7 @@ pub async fn update_credentials<
 //             })
 //             .await;
 //         let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
-//         let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::UpdateCredentials>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         update_credentials(request_state, json).await;
@@ -439,17 +439,17 @@ pub async fn update_credentials<
 //     #[actix_rt::test]
 //     async fn does_not_suspend_user_if_previous_update_failures_are_expired() {
 //         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, password) = test_helper::fake_credentials();
 //         let hashed_password = controller::password::hash_password(&password).unwrap();
-//         let auth_credentials = model::EmailRequest::new(&email, "Invalid Password");
-//         let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
-//         let data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
+//         let auth_credentials = fake::EmailRequest::new(&email, "Invalid Password");
+//         let updated_credentials = fake::CredentialsRequest::new(&None, &None, &None);
+//         let data = fake::UpdateCredentials::new(&auth_credentials, &updated_credentials);
 //         helper
-//             .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+//             .add_credentials(&fake::FullRequest::new(&name, &email, &hashed_password))
 //             .await;
 //         let stored_credentials = helper
 //             .get_credentials_by_name(&name)
@@ -459,7 +459,7 @@ pub async fn update_credentials<
 //         let expired_timestamp =
 //             SystemTime::now().sub(Duration::from_secs(ACCOUNT_LOCK_DURATION_IN_SECONDS + 1));
 //         helper
-//             .set_login_history(&model::FailedLogin {
+//             .set_login_history(&fake::FailedLogin {
 //                 user_id: stored_credentials.id,
 //                 updated_at: expired_timestamp,
 //                 created_at: expired_timestamp,
@@ -467,7 +467,7 @@ pub async fn update_credentials<
 //             })
 //             .await;
 //         let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
-//         let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::UpdateCredentials>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         update_credentials(request_state, json).await;
@@ -483,17 +483,17 @@ pub async fn update_credentials<
 //     #[actix_rt::test]
 //     async fn creates_a_log_of_failed_login_attempts() {
 //         let helper = test_helper::Helper::new().await.unwrap();
-//         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
+//         let db = fake::DatabaseConnection::new(TEST_DATABASE_CONFIG)
 //             .await
 //             .unwrap();
-//         let request_state = web::Data::new(model::ServiceState::new(db).await.unwrap());
+//         let request_state = web::Data::new(fake::ServiceState::new(db).await.unwrap());
 //         let (name, email, password) = test_helper::fake_credentials();
 //         let hashed_password = controller::password::hash_password(&password).unwrap();
-//         let auth_credentials = model::EmailRequest::new(&email, "Invalid Password");
-//         let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
-//         let data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
+//         let auth_credentials = fake::EmailRequest::new(&email, "Invalid Password");
+//         let updated_credentials = fake::CredentialsRequest::new(&None, &None, &None);
+//         let data = fake::UpdateCredentials::new(&auth_credentials, &updated_credentials);
 //         helper
-//             .add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
+//             .add_credentials(&fake::FullRequest::new(&name, &email, &hashed_password))
 //             .await;
 //         let stored_credentials = helper
 //             .get_credentials_by_name(&name)
@@ -501,7 +501,7 @@ pub async fn update_credentials<
 //             .unwrap()
 //             .unwrap();
 //         let (req, mut payload) = test::TestRequest::put().set_json(&data).to_http_parts();
-//         let json = web::Json::<model::UpdateCredentials>::from_request(&req, &mut payload)
+//         let json = web::Json::<fake::UpdateCredentials>::from_request(&req, &mut payload)
 //             .await
 //             .unwrap();
 //         let resp = update_credentials(request_state, json).await;

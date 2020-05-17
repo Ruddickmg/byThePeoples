@@ -14,7 +14,7 @@ pub struct MockCredentials<T: model::Database> {
     pub by_email: MockedOptionCredentials,
     pub get_status: MockedStatusResult,
     pub update_credentials: MockedCredentials,
-    pub save_credentials: MockedCountResult,
+    pub save_credentials: MockedCredentials,
     pub mark_as_deleted_by_email: MockedCountResult,
     phantom: PhantomData<T>,
 }
@@ -28,7 +28,7 @@ impl<T: model::Database> MockCredentials<T> {
             update_credentials: MockedCredentials::new(
                 "repository::Credentials.update_credentials()",
             ),
-            save_credentials: MockedCountResult::new("repository::Credentials.save_credentials()"),
+            save_credentials: MockedCredentials::new("repository::Credentials.save_credentials()"),
             mark_as_deleted_by_email: MockedCountResult::new(
                 "repository::Credentials.mark_as_deleted_by_email()",
             ),
@@ -53,7 +53,11 @@ impl<T: model::Database> MockCredentials<T> {
     ) -> Result<model::Credentials, Error> {
         self.update_credentials.call()
     }
-    pub async fn save_credentials(&self, _credentials: &model::FullRequest) -> Result<i32, Error> {
+    pub async fn save_credentials(
+        &self,
+        _name: &str,
+        _email: &str,
+    ) -> Result<model::Credentials, Error> {
         self.save_credentials.call()
     }
     pub async fn mark_as_deleted_by_email(&mut self, _email: &str) -> Result<i32, Error> {
@@ -69,10 +73,7 @@ impl<T: model::Database> repository::Credentials<T> for MockCredentials<T> {
     async fn by_email(&self, _email: &str) -> CredentialResults {
         self.by_email.call()
     }
-    async fn get_status(
-        &self,
-        _credentials: &model::FullRequest,
-    ) -> Result<repository::Status, Error> {
+    async fn get_status(&self, _name: &str, _email: &str) -> Result<repository::Status, Error> {
         self.get_status.call()
     }
     async fn update_credentials(
@@ -81,7 +82,10 @@ impl<T: model::Database> repository::Credentials<T> for MockCredentials<T> {
     ) -> Result<model::Credentials, Error> {
         self.update_credentials.call()
     }
-    async fn save_credentials(&self, _credentials: &model::FullRequest) -> Result<i32, Error> {
+    async fn save_credentials(
+        &self,
+        _credentials: &model::FullRequest,
+    ) -> Result<model::Credentials, Error> {
         self.save_credentials.call()
     }
     async fn mark_as_deleted_by_email(&self, _email: &str) -> Result<i32, Error> {

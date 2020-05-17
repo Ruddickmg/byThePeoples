@@ -35,8 +35,7 @@ pub fn hash_password(password: &str) -> Result<String, Error> {
 }
 
 pub fn authenticate(password: &str, hash: &str) -> Result<bool, Error> {
-    let mut verifier = Verifier::default();
-    match verifier
+    match Verifier::default()
         .with_hash(hash)
         .with_password(password)
         .with_secret_key(hash::secret())
@@ -50,7 +49,7 @@ pub fn authenticate(password: &str, hash: &str) -> Result<bool, Error> {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub struct PasswordIssues {
     message: String,
     warning: Option<String>,
