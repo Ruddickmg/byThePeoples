@@ -25,7 +25,6 @@ pub async fn update<
     }: &model::CredentialsRequest = request;
     if let Some(stored_credentials) = credentials.by_email(&auth_details.email).await? {
         if stored_credentials.suspended()? {
-            println!("suspended");
             Ok(UpdateResults::Suspended)
         } else {
             if password::authenticate(&auth_details.password, &stored_credentials.hash)? {

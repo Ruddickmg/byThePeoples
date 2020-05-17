@@ -56,12 +56,6 @@ impl From<argonautica::Error> for Error {
     }
 }
 
-pub mod logging {
-    pub fn log_error(error: String) {
-        println!("Error occurred: {}", error);
-    }
-}
-
 pub mod connection {
     const PORT: &str = "PORT";
     const ADDRESS: &str = "IP";
