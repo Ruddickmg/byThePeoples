@@ -29,6 +29,9 @@ impl fmt::Display for Strength {
 pub fn hash_password(password: &str) -> Result<String, Error> {
     let mut hasher = Hasher::default();
     Ok(hasher
+        .configure_lanes(hash::lanes())
+        .configure_iterations(hash::time_cost())
+        .configure_memory_size(hash::memory_usage())
         .with_password(password)
         .with_secret_key(hash::secret())
         .hash()?)
