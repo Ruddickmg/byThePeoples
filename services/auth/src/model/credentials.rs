@@ -76,3 +76,35 @@ impl From<database::Row> for AffectedRows {
         AffectedRows { count: row.get(0) }
     }
 }
+
+#[cfg(test)]
+mod credentials_model_test {
+    use crate::configuration::ACCOUNT_LOCK_DURATION_IN_SECONDS;
+    use crate::utilities::test::fake;
+    use actix_rt;
+    use std::ops::Sub;
+    use std::time::{Duration, SystemTime};
+
+    #[actix_rt::test]
+    async fn suspended_returns_true_if_the_time_since_suspended_is_less_than_the_timout_period() {
+        let mut credentials = fake::credentials();
+        credentials.locked_at = Some(SystemTime::now());
+        assert_eq!(credentials.suspended().unwrap(), true);
+    }
+
+    #[actix_rt::test]
+    async fn suspended_returns_false_if_the_time_since_suspended_is_longer_than_the_timout_period()
+    {
+        let mut credentials = fake::credentials();
+        let time_longer_than_lock_duration =
+            SystemTime::now().sub(Duration::from_secs(ACCOUNT_LOCK_DURATION_IN_SECONDS + 1));
+        credentials.locked_at = Some(time_longer_than_lock_duration);
+        assert_eq!(credentials.suspended().unwrap(), false);
+    }
+
+    #[actix_rt::test]
+    async fn suspended_returns_false_if_the_account_was_never_suspended() {
+        let credentials = fake::credentials();
+        assert_eq!(credentials.suspended().unwrap(), false);
+    }
+}
