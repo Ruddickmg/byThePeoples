@@ -28,4 +28,26 @@ pub async fn authenticate_credentials<
 }
 
 #[cfg(test)]
-mod verification_handler_test {}
+mod verification_handler_test {
+    use super::*;
+    use crate::utilities::test::fake;
+    use actix_rt;
+
+    #[actix_rt::test]
+    async fn returns_okay_on_successful_authentication() {}
+
+    #[actix_rt::test]
+    async fn sets_auth_header_on_successful_authentication() {}
+
+    #[actix_rt::test]
+    async fn returns_unauthorized_on_failed_authentication() {}
+
+    #[actix_rt::test]
+    async fn does_not_set_auth_header_on_failed_authentication() {}
+
+    #[actix_rt::test]
+    async fn returns_internal_server_error_on_unexpected_error() {}
+
+    #[actix_rt::test]
+    async fn does_not_set_auth_header_on_unexpected_error() {}
+}

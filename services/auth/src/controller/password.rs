@@ -2,9 +2,12 @@ extern crate argonautica;
 
 use crate::{configuration::hash, Error};
 use argonautica::{Hasher, Verifier};
+use ring::{rand, rand::SecureRandom};
 use serde::{Deserialize, Serialize};
-use std::fmt;
+use std::{fmt, str};
 use zxcvbn;
+
+const SALT_LENGTH: usize = 32;
 
 pub enum Strength {
     Strong,
@@ -26,12 +29,20 @@ impl fmt::Display for Strength {
     }
 }
 
+pub fn generate_salt() -> Result<Vec<u8>, Error> {
+    let rng = rand::SystemRandom::new();
+    let mut salt = [0u8; SALT_LENGTH];
+    rng.fill(&mut salt)?;
+    println!("salt: {:#?}", salt);
+    Ok(salt.to_vec())
+}
+
 pub fn hash_password(password: &str) -> Result<String, Error> {
-    let mut hasher = Hasher::default();
-    Ok(hasher
+    Ok(Hasher::default()
         .configure_lanes(hash::lanes())
         .configure_iterations(hash::time_cost())
         .configure_memory_size(hash::memory_usage())
+        .with_salt(generate_salt()?)
         .with_password(password)
         .with_secret_key(hash::secret())
         .hash()?)
@@ -97,6 +108,7 @@ mod hashing_and_auth_tests {
             Ok(hashed) => hashed,
             Err(error) => panic!("Error hashing password: {}", error),
         };
+        println!("pass length: {}", hashed_password.len());
         match authenticate(&password, &hashed_password) {
             Ok(valid) => {
                 if !valid {

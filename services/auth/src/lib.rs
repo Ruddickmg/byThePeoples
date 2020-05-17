@@ -56,6 +56,18 @@ impl From<argonautica::Error> for Error {
     }
 }
 
+impl From<ring::error::Unspecified> for Error {
+    fn from(error: ring::error::Unspecified) -> Error {
+        Error::InternalServerError(error.to_string())
+    }
+}
+
+impl From<std::str::Utf8Error> for Error {
+    fn from(error: std::str::Utf8Error) -> Error {
+        Error::InternalServerError(error.to_string())
+    }
+}
+
 pub mod connection {
     const PORT: &str = "PORT";
     const ADDRESS: &str = "IP";

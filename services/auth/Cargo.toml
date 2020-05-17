@@ -9,6 +9,7 @@ database = { path = "../../lib/db" }
 environment = { path = "../../lib/environment" }
 status_codes = { path = "../../lib/status_codes" }
 mocking = { path = "../../lib/mocking" }
+ring = "0.16.13"
 rust-argon2 = "0.8.2"
 rustls = "0.16.0"
 actix-web = "2.0.0"
