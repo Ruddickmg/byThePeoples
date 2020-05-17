@@ -1,5 +1,7 @@
 use crate::constants::{HOURS_IN_A_DAY, MINUTES_IN_AN_HOUR, SECONDS_IN_A_MINUTE};
 
+pub use environment;
+
 pub mod database;
 pub mod hash;
 pub mod jwt;

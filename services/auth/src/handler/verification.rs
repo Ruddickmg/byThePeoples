@@ -18,13 +18,79 @@ pub async fn authenticate_credentials<
     {
         Ok(stored_credentials) => match stored_credentials {
             authorization::Results::Valid(credentials) => {
-                match jwt::set_token(HttpResponse::Ok(), credentials) {
-                    Ok(authenticated_response) => authenticated_response,
-                    Err(_) => HttpResponse::InternalServerError().finish(),
-                }
+                jwt::set_token(HttpResponse::Ok(), credentials)
+                    .unwrap_or(HttpResponse::InternalServerError().finish())
             }
             _ => HttpResponse::Unauthorized().finish(),
         },
         Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
+#[cfg(test)]
+mod verification_handler_test {
+    use super::*;
+    use crate::{controller::password, utilities::test::fake, Error};
+    use actix_rt;
+    use actix_web::{http, web};
+
+    #[actix_rt::test]
+    async fn returns_okay_on_successful_authentication() {
+        let mut state = fake::service_state();
+        let request = fake::name_request();
+        let mut record = fake::credentials();
+        record.hash = password::hash_password(&request.password).unwrap();
+        state.credentials.by_name.returns(Some(record.clone()));
+        let result = authenticate_credentials(web::Data::new(state), web::Json(request)).await;
+        assert_eq!(result.status(), status_codes::OKAY);
+    }
+
+    #[actix_rt::test]
+    async fn sets_auth_header_on_successful_authentication() {
+        let mut state = fake::service_state();
+        let request = fake::name_request();
+        let mut record = fake::credentials();
+        record.hash = password::hash_password(&request.password).unwrap();
+        state.credentials.by_name.returns(Some(record.clone()));
+        let result = authenticate_credentials(web::Data::new(state), web::Json(request)).await;
+        assert!(result.headers().contains_key(http::header::AUTHORIZATION));
+    }
+
+    #[actix_rt::test]
+    async fn returns_unauthorized_on_failed_authentication() {
+        let mut state = fake::service_state();
+        let request = fake::name_request();
+        state.credentials.by_name.returns(None);
+        let result = authenticate_credentials(web::Data::new(state), web::Json(request)).await;
+        assert_eq!(result.status(), status_codes::UNAUTHORIZED);
+    }
+
+    #[actix_rt::test]
+    async fn does_not_set_auth_header_on_failed_authentication() {
+        let mut state = fake::service_state();
+        let request = fake::name_request();
+        state.credentials.by_name.returns(None);
+        let result = authenticate_credentials(web::Data::new(state), web::Json(request)).await;
+        assert!(!result.headers().contains_key(http::header::AUTHORIZATION));
+    }
+
+    #[actix_rt::test]
+    async fn returns_internal_server_error_on_unexpected_error() {
+        let error = Error::InternalServerError("testing".to_string());
+        let mut state = fake::service_state();
+        let request = fake::name_request();
+        state.credentials.by_name.throws_error(error);
+        let result = authenticate_credentials(web::Data::new(state), web::Json(request)).await;
+        assert_eq!(result.status(), status_codes::INTERNAL_SERVER_ERROR);
+    }
+
+    #[actix_rt::test]
+    async fn does_not_set_auth_header_on_unexpected_error() {
+        let error = Error::InternalServerError("testing".to_string());
+        let mut state = fake::service_state();
+        let request = fake::name_request();
+        state.credentials.by_name.throws_error(error);
+        let result = authenticate_credentials(web::Data::new(state), web::Json(request)).await;
+        assert!(!result.headers().contains_key(http::header::AUTHORIZATION));
     }
 }
