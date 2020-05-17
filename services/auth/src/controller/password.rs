@@ -33,7 +33,6 @@ pub fn generate_salt() -> Result<Vec<u8>, Error> {
     let rng = rand::SystemRandom::new();
     let mut salt = [0u8; SALT_LENGTH];
     rng.fill(&mut salt)?;
-    println!("salt: {:#?}", salt);
     Ok(salt.to_vec())
 }
 
@@ -108,7 +107,6 @@ mod hashing_and_auth_tests {
             Ok(hashed) => hashed,
             Err(error) => panic!("Error hashing password: {}", error),
         };
-        println!("pass length: {}", hashed_password.len());
         match authenticate(&password, &hashed_password) {
             Ok(valid) => {
                 if !valid {
