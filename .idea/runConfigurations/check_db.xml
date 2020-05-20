@@ -1,12 +1,12 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="dev api" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+  <configuration default="false" name="check db" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
     <option name="channel" value="DEFAULT" />
-    <option name="command" value="cmd watch" />
+    <option name="command" value="check " />
     <option name="allFeatures" value="false" />
     <option name="nocapture" value="false" />
     <option name="emulateTerminal" value="false" />
     <option name="backtrace" value="SHORT" />
-    <option name="workingDirectory" value="file://$PROJECT_DIR$/services/api" />
+    <option name="workingDirectory" value="file://$PROJECT_DIR$/lib/db" />
     <envs>
       <env name="ENVIRONMENT" value="development" />
       <env name="PORT" value="8080" />
