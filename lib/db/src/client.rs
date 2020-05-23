@@ -1,4 +1,4 @@
-use crate::{transaction::Transaction, Params, PooledConnection, Result, Row, Statement};
+use crate::{transaction, Params, PooledConnection, Result, Row, Statement};
 use async_trait::async_trait;
 use std::{fs, marker::Send};
 
@@ -34,14 +34,14 @@ impl<'a: 'c, 'c> Client<'a> {
     pub async fn execute_file(&self, path: &str) -> Result<()> {
         Ok(self.batch(&fs::read_to_string(path)?).await?)
     }
-    pub async fn transaction(&'c mut self) -> Result<Transaction<'c>> {
-        Ok(Transaction::new(self.connection.transaction().await?).await?)
+    pub async fn transaction(&'c mut self) -> Result<transaction::Transaction<'c>> {
+        Ok(transaction::Transaction::new(self.connection.transaction().await?).await?)
     }
 }
 
 #[async_trait]
 pub trait ClientTrait<'a: 'c, 'c> {
-    type TransactionType;
+    type Transaction;
     async fn execute<'b>(&self, query: &str, params: Params<'b>) -> Result<u64>;
     async fn prepare(&self, query: &str) -> Result<Statement>;
     async fn query<'b, T: Send + From<Row>>(
@@ -51,12 +51,12 @@ pub trait ClientTrait<'a: 'c, 'c> {
     ) -> Result<Vec<T>>;
     async fn batch(&self, sql: &str) -> Result<()>;
     async fn execute_file(&self, path: &str) -> Result<()>;
-    async fn transaction(&'c mut self) -> Result<Self::TransactionType>;
+    async fn transaction(&'c mut self) -> Result<Self::Transaction>;
 }
 
 #[async_trait]
 impl<'a: 'c, 'c> ClientTrait<'a, 'c> for Client<'a> {
-    type TransactionType = Transaction<'c>;
+    type Transaction = transaction::Transaction<'c>;
     async fn execute<'b>(&self, query: &str, params: Params<'b>) -> Result<u64> {
         Ok(self.connection.execute(query, params).await?)
     }
@@ -81,7 +81,7 @@ impl<'a: 'c, 'c> ClientTrait<'a, 'c> for Client<'a> {
     async fn execute_file(&self, path: &str) -> Result<()> {
         Ok(self.batch(&fs::read_to_string(path)?).await?)
     }
-    async fn transaction(&'c mut self) -> Result<Self::TransactionType> {
-        Ok(Transaction::new(self.connection.transaction().await?).await?)
+    async fn transaction(&'c mut self) -> Result<Self::Transaction> {
+        Ok(transaction::Transaction::new(self.connection.transaction().await?).await?)
     }
 }
