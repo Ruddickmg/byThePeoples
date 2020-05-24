@@ -9,9 +9,8 @@ pub enum UpdateResults {
 }
 
 pub async fn update<
-    T: model::Database,
-    L: repository::LoginHistory<T>,
-    C: repository::Credentials<T>,
+    L: repository::LoginHistory,
+    C: repository::Credentials,
 >(
     credentials: &C,
     login_history: &L,

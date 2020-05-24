@@ -1,5 +1,4 @@
 use crate::repository;
-use std::marker::PhantomData;
 
 pub mod credentials;
 mod failed_login;
@@ -14,30 +13,24 @@ pub use failed_login::*;
 pub use request::*;
 
 pub type AppServiceState = ServiceState<
-    DatabaseConnection,
     repository::LoginHistoryRepository<DatabaseConnection>,
     repository::CredentialsRepository<DatabaseConnection>,
 >;
 
 #[derive(Clone)]
 pub struct ServiceState<
-    T: Database = DatabaseConnection,
-    L: repository::LoginHistory<T> = repository::LoginHistoryRepository<DatabaseConnection>,
-    C: repository::Credentials<T> = repository::CredentialsRepository<DatabaseConnection>,
+    L: repository::LoginHistory = repository::LoginHistoryRepository<DatabaseConnection>,
+    C: repository::Credentials = repository::CredentialsRepository<DatabaseConnection>,
 > {
     pub login_history: L,
     pub credentials: C,
-    phantom: PhantomData<T>,
 }
 
-impl<T: Database, L: repository::LoginHistory<T>, C: repository::Credentials<T>>
-    ServiceState<T, L, C>
-{
-    pub fn new(login_history: L, credentials: C) -> ServiceState<T, L, C> {
+impl<L: repository::LoginHistory, C: repository::Credentials> ServiceState<L, C> {
+    pub fn new(login_history: L, credentials: C) -> ServiceState<L, C> {
         ServiceState {
             credentials,
             login_history,
-            phantom: PhantomData,
         }
     }
 }

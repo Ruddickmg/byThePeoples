@@ -5,11 +5,10 @@ use crate::{
 use actix_web::{web, HttpResponse};
 
 pub async fn save_credentials<
-    T: model::Database,
-    L: repository::LoginHistory<T>,
-    C: repository::Credentials<T>,
+    L: repository::LoginHistory,
+    C: repository::Credentials,
 >(
-    state: web::Data<model::ServiceState<T, L, C>>,
+    state: web::Data<model::ServiceState<L, C>>,
     json: web::Json<model::FullRequest>,
 ) -> HttpResponse {
     let user_credentials = model::FullRequest::from(json);
