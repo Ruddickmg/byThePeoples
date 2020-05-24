@@ -4,8 +4,9 @@ use actix_rt;
 use actix_web::{http, test, App};
 use btp_auth_server::{
     configuration::{ACCOUNT_LOCK_DURATION_IN_SECONDS, ALLOWED_FAILED_LOGIN_ATTEMPTS},
-    controller, model, routes,
+    model, routes,
     routes::VERIFICATION_ROUTE,
+    utilities,
 };
 use std::{
     ops::Sub,
@@ -17,7 +18,7 @@ async fn authenticate_credentials_success_status() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let request_data = model::NameRequest::new(&name, &password);
     db.add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
         .await;
@@ -41,7 +42,7 @@ async fn authenticate_credentials_sets_auth_header() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let request_data = model::NameRequest::new(&name, &password);
     db.add_credentials(&model::FullRequest::new(&name, &email, &hashed_password))
         .await;
@@ -84,7 +85,7 @@ async fn errors_with_unauthorized_if_passwords_do_not_match() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     db.add_credentials(&model::FullRequest::new(&name, &hashed_password, &email))
         .await;
     let request_data = model::NameRequest::new(&name, "invalid password");
@@ -108,7 +109,7 @@ async fn returns_unauthorized_if_a_user_has_been_suspended() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     db.add_credentials(&model::FullRequest::new(&name, &hashed_password, &email))
         .await;
     let request_data = model::NameRequest::new(&name, "invalid password");
@@ -134,7 +135,7 @@ async fn suspends_a_user_if_they_have_exceeded_the_allowed_failed_login_attempts
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     db.add_credentials(&model::FullRequest::new(&name, &hashed_password, &email))
         .await;
     let request_data = model::NameRequest::new(&name, "invalid password");
@@ -162,7 +163,7 @@ async fn deletes_the_login_history_once_a_user_has_been_suspended() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     db.add_credentials(&model::FullRequest::new(&name, &hashed_password, &email))
         .await;
     let request_data = model::NameRequest::new(&name, "invalid password");
@@ -190,7 +191,7 @@ async fn deletes_login_history_if_previous_login_failures_are_expired() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     db.add_credentials(&model::FullRequest::new(&name, &hashed_password, &email))
         .await;
     let request_data = model::NameRequest::new(&name, "invalid password");
@@ -225,7 +226,7 @@ async fn does_not_suspend_user_if_previous_login_failures_are_expired() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     db.add_credentials(&model::FullRequest::new(&name, &hashed_password, &email))
         .await;
     let request_data = model::NameRequest::new(&name, "invalid password");
@@ -260,7 +261,7 @@ async fn creates_a_log_of_failed_login_attempts() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     db.add_credentials(&model::FullRequest::new(&name, &hashed_password, &email))
         .await;
     let request_data = model::NameRequest::new(&name, "invalid password");

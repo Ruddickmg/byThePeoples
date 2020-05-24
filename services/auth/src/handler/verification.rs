@@ -1,6 +1,8 @@
 use crate::{
-    controller::{authorization, jwt},
-    model, repository,
+    controller::authorization,
+    utilities::jwt,
+    repository,
+    model,
 };
 use actix_web::{web, HttpResponse};
 
@@ -29,7 +31,7 @@ pub async fn authenticate_credentials<
 #[cfg(test)]
 mod verification_handler_test {
     use super::*;
-    use crate::{controller::password, utilities::test::fake, Error};
+    use crate::{utilities::{test::fake, hash}, Error};
     use actix_rt;
     use actix_web::{http, web};
 
@@ -38,7 +40,7 @@ mod verification_handler_test {
         let mut state = fake::service_state();
         let request = fake::name_request();
         let mut record = fake::credentials();
-        record.hash = password::hash_password(&request.password).unwrap();
+        record.hash = hash::generate(&request.password).unwrap();
         state.credentials.by_name.returns(Some(record.clone()));
         let result = authenticate_credentials(web::Data::new(state), web::Json(request)).await;
         assert_eq!(result.status(), status_codes::OKAY);
@@ -49,7 +51,7 @@ mod verification_handler_test {
         let mut state = fake::service_state();
         let request = fake::name_request();
         let mut record = fake::credentials();
-        record.hash = password::hash_password(&request.password).unwrap();
+        record.hash = hash::generate(&request.password).unwrap();
         state.credentials.by_name.returns(Some(record.clone()));
         let result = authenticate_credentials(web::Data::new(state), web::Json(request)).await;
         assert!(result.headers().contains_key(http::header::AUTHORIZATION));

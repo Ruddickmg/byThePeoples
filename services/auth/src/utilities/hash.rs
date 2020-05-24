@@ -2,47 +2,34 @@ extern crate argonautica;
 
 use crate::{configuration::hash, Error};
 use argonautica::{Hasher, Verifier};
-use ring::{rand, rand::SecureRandom};
-use serde::{Deserialize, Serialize};
-use std::{fmt, str};
-use zxcvbn;
+use ring::{rand as ring_rand, rand::SecureRandom};
+use std::str;
+use rand;
+use rand::{Rng, distributions::Alphanumeric};
 
 const SALT_LENGTH: usize = 32;
 
-pub enum Strength {
-    Strong,
-    Moderate,
-    Weak(PasswordIssues),
-}
-
-impl fmt::Display for Strength {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Strength::Strong => "Strong",
-                Strength::Moderate => "Moderate",
-                Strength::Weak(_) => "Weak",
-            }
-        )
-    }
-}
-
-pub fn generate_salt() -> Result<Vec<u8>, Error> {
-    let rng = rand::SystemRandom::new();
+fn generate_salt() -> Result<Vec<u8>, Error> {
+    let rng = ring_rand::SystemRandom::new();
     let mut salt = [0u8; SALT_LENGTH];
     rng.fill(&mut salt)?;
     Ok(salt.to_vec())
 }
 
-pub fn hash_password(password: &str) -> Result<String, Error> {
+pub fn token() -> String {
+    rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(SALT_LENGTH)
+        .collect()
+}
+
+pub fn generate(word: &str) -> Result<String, Error> {
     Ok(Hasher::default()
         .configure_lanes(hash::lanes())
         .configure_iterations(hash::time_cost())
         .configure_memory_size(hash::memory_usage())
         .with_salt(generate_salt()?)
-        .with_password(password)
+        .with_password(word)
         .with_secret_key(hash::secret())
         .hash()?)
 }
@@ -62,48 +49,14 @@ pub fn authenticate(password: &str, hash: &str) -> Result<bool, Error> {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
-pub struct PasswordIssues {
-    message: String,
-    warning: Option<String>,
-    suggestions: Vec<String>,
-}
-const WEAK_PASSWORD_MESSAGE: &str = "Password is not strong enough";
-
-pub fn strength(name: &str, email: &str, password: &str) -> Result<Strength, Error> {
-    let result = zxcvbn::zxcvbn(&password, &[&name, &email])?;
-    Ok(match result.score() {
-        0..=2 => Strength::Weak(match result.feedback() {
-            Some(message) => PasswordIssues {
-                message: String::from(WEAK_PASSWORD_MESSAGE),
-                warning: message.warning().map(|warning| warning.to_string()),
-                suggestions: message
-                    .suggestions()
-                    .iter()
-                    .map(|suggestion| suggestion.to_string())
-                    .collect(),
-            },
-            None => PasswordIssues {
-                message: String::from(WEAK_PASSWORD_MESSAGE),
-                warning: None,
-                suggestions: vec![],
-            },
-        }),
-        3 => Strength::Moderate,
-        _ => Strength::Strong,
-    })
-}
-
-// ---
-
 #[cfg(test)]
 mod hashing_and_auth_tests {
     use super::*;
 
     #[test]
-    fn password_matches_hash() {
+    fn behaves_correctly_when_hashes_match() {
         let password = String::from("Cool!");
-        let hashed_password = match hash_password(&password) {
+        let hashed_password = match generate(&password) {
             Ok(hashed) => hashed,
             Err(error) => panic!("Error hashing password: {}", error),
         };
@@ -118,10 +71,10 @@ mod hashing_and_auth_tests {
     }
 
     #[test]
-    fn password_does_not_match_hash() {
+    fn behaves_correctly_when_hash_does_not_match() {
         let password = String::from("Cool!");
         let invalid_password = String::from("Not cool...");
-        let hashed_password = match hash_password(&password) {
+        let hashed_password = match generate(&password) {
             Ok(hashed) => hashed,
             Err(_) => panic!("Error saving password"),
         };

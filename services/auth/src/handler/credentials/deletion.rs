@@ -22,7 +22,7 @@ pub async fn delete_credentials<
 #[cfg(test)]
 mod delete_credentials_handler_test {
     use super::*;
-    use crate::{controller::password, utilities::test::fake, Error};
+    use crate::{utilities::{test::fake, hash}, Error};
     use actix_rt;
     use actix_web::web;
 
@@ -31,7 +31,7 @@ mod delete_credentials_handler_test {
         let mut state = fake::service_state();
         let request = fake::email_request();
         let mut record = fake::credentials();
-        record.hash = password::hash_password(&request.password).unwrap();
+        record.hash = hash::generate(&request.password).unwrap();
         state.credentials.by_email.returns(Some(record.clone()));
         state.credentials.mark_as_deleted_by_email.returns(1);
         let result = delete_credentials(web::Data::new(state), web::Json(request)).await;

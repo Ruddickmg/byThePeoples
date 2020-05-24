@@ -2,6 +2,7 @@ use crate::repository;
 
 pub mod credentials;
 mod failed_login;
+mod password_reset;
 mod request;
 
 pub use credentials::*;

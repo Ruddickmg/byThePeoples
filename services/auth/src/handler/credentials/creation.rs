@@ -1,6 +1,8 @@
 use crate::{
-    controller::{credentials, jwt},
-    model, repository,
+    controller::credentials,
+    utilities::jwt,
+    repository,
+    model,
 };
 use actix_web::{web, HttpResponse};
 

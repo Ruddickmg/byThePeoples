@@ -1,4 +1,4 @@
-use crate::{controller::password, model, repository, Error};
+use crate::{utilities::{password, hash}, model, repository, Error};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum SaveResults {
@@ -25,7 +25,7 @@ pub async fn create<C: repository::Credentials>(
                     .save_credentials(&model::FullRequest {
                         name: String::from(name),
                         email: String::from(email),
-                        password: password::hash_password(&password)?,
+                        password: hash::generate(&password)?,
                     })
                     .await?,
             )),

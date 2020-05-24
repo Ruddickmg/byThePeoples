@@ -1,4 +1,4 @@
-use crate::{controller::password, model, repository, Error};
+use crate::{model, repository, Error};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum DeleteResults {
@@ -21,7 +21,7 @@ pub async fn delete<
         if stored_credentials.suspended()? {
             Ok(DeleteResults::Suspended)
         } else {
-            if password::authenticate(&password, &stored_credentials.hash)? {
+            if stored_credentials.password_matches(&password)? {
                 credentials.mark_as_deleted_by_email(&email).await?;
                 Ok(DeleteResults::Success)
             } else {
@@ -37,7 +37,10 @@ pub async fn delete<
 #[cfg(test)]
 mod credentials_delete_test {
     use super::*;
-    use crate::utilities::test::fake;
+    use crate::utilities::{
+        test::fake,
+        hash,
+    };
     use actix_rt;
     use std::time::SystemTime;
 
@@ -96,7 +99,7 @@ mod credentials_delete_test {
         let request = fake::email_request();
         let mut credentials = fake::credentials();
         let mut state = fake::service_state();
-        credentials.hash = password::hash_password(&request.password).unwrap();
+        credentials.hash = hash::generate(&request.password).unwrap();
         state.credentials.by_email.returns(Some(credentials));
         state.credentials.mark_as_deleted_by_email.returns(1);
         let result = delete(&state.credentials, &state.login_history, &request)
@@ -110,7 +113,7 @@ mod credentials_delete_test {
         let request = fake::email_request();
         let mut credentials = fake::credentials();
         let mut state = fake::service_state();
-        credentials.hash = password::hash_password(&request.password).unwrap();
+        credentials.hash = hash::generate(&request.password).unwrap();
         state.credentials.by_email.returns(Some(credentials));
         state.credentials.mark_as_deleted_by_email.returns(1);
         delete(&state.credentials, &state.login_history, &request)

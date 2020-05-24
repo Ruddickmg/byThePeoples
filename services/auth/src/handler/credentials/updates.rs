@@ -1,6 +1,8 @@
 use crate::{
-    controller::{credentials, jwt},
-    model, repository,
+    controller::credentials,
+    utilities::jwt,
+    repository,
+    model,
 };
 use actix_web::{web, HttpResponse};
 
@@ -31,7 +33,7 @@ pub async fn update_credentials<
 #[cfg(test)]
 mod update_credentials_handler_test {
     use super::*;
-    use crate::{controller::password, utilities::test::fake, Error};
+    use crate::{utilities::{test::fake, hash}, Error};
     use actix_rt;
     use actix_web::{http, web};
 
@@ -40,7 +42,7 @@ mod update_credentials_handler_test {
         let mut state = fake::service_state();
         let request = fake::update_credentials_request();
         let mut record = fake::credentials();
-        record.hash = password::hash_password(&request.auth.password).unwrap();
+        record.hash = hash::generate(&request.auth.password).unwrap();
         state.credentials.by_email.returns(Some(record.clone()));
         state.credentials.update_credentials.returns(record.clone());
         let result = update_credentials(web::Data::new(state), web::Json(request)).await;
@@ -52,7 +54,7 @@ mod update_credentials_handler_test {
         let mut state = fake::service_state();
         let request = fake::update_credentials_request();
         let mut record = fake::credentials();
-        record.hash = password::hash_password(&request.auth.password).unwrap();
+        record.hash = hash::generate(&request.auth.password).unwrap();
         state.credentials.by_email.returns(Some(record.clone()));
         state.credentials.update_credentials.returns(record.clone());
         let result = update_credentials(web::Data::new(state), web::Json(request)).await;

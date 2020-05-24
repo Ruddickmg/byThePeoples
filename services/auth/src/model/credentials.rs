@@ -1,5 +1,9 @@
-use crate::{configuration::ACCOUNT_LOCK_DURATION_IN_SECONDS, Error};
-use std::time::Duration;
+use crate::{
+    configuration::ACCOUNT_LOCK_DURATION_IN_SECONDS,
+    utilities::hash,
+    Error,
+};
+use std::time::{SystemTime, Duration};
 
 pub type CredentialId = i32;
 
@@ -30,13 +34,16 @@ pub struct Credentials {
 
 impl Credentials {
     pub fn suspended(&self) -> Result<bool, Error> {
-        if let Some(suspension_start) = self.locked_at {
-            let now = database::TimeStamp::now();
-            Ok(now.duration_since(suspension_start)?
-                < Duration::from_secs(ACCOUNT_LOCK_DURATION_IN_SECONDS))
-        } else {
-            Ok(false)
-        }
+        Ok(self.locked_at.map_or(false, | suspension_start | {
+            let suspension_duration = Duration::from_secs(ACCOUNT_LOCK_DURATION_IN_SECONDS);
+            SystemTime::now()
+                .duration_since(suspension_start)
+                .map(| start_time | start_time < suspension_duration)
+                .unwrap_or(false)
+        }))
+    }
+    pub fn password_matches(&self, password: &str) -> Result<bool, Error> {
+        hash::authenticate(password, &self.hash)
     }
 }
 
