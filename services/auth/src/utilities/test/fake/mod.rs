@@ -14,7 +14,6 @@ const MAX_FAKE_PASSWORD_LENGTH: usize = 20;
 const MIN_FAKE_PASSWORD_LENGTH: usize = 15;
 
 type MockServiceState = model::ServiceState<
-    model::DatabaseConnection,
     MockLoginHistory<model::DatabaseConnection>,
     MockCredentials<model::DatabaseConnection>,
 >;

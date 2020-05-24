@@ -9,9 +9,8 @@ pub enum Results {
 }
 
 pub async fn authorize<
-    T: model::Database,
-    L: repository::LoginHistory<T>,
-    C: repository::Credentials<T>,
+    L: repository::LoginHistory,
+    C: repository::Credentials,
 >(
     user_credentials: &model::NameRequest,
     auth_credentials: &C,

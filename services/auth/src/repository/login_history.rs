@@ -71,7 +71,7 @@ impl<T: model::Database> LoginHistoryRepository<T> {
 }
 
 #[async_trait]
-pub trait LoginHistory<T: model::Database>: Clone + Send + Sync {
+pub trait LoginHistory: Clone + Send + Sync {
     async fn log(&self, id: &model::CredentialId) -> Result<model::FailedLogin, Error>;
     async fn get(&self, id: &model::CredentialId) -> Result<model::FailedLogin, Error>;
     async fn delete(&self, id: &model::CredentialId) -> Result<(), Error>;
@@ -79,7 +79,7 @@ pub trait LoginHistory<T: model::Database>: Clone + Send + Sync {
 }
 
 #[async_trait]
-impl<T: model::Database> LoginHistory<T> for LoginHistoryRepository<T> {
+impl<T: model::Database> LoginHistory for LoginHistoryRepository<T> {
     async fn log(&self, id: &model::CredentialId) -> Result<model::FailedLogin, Error> {
         let client = self.db.client().await?;
         let stmt = client.prepare(CREATE_OR_UPDATE_FAILED_LOGIN).await?;
