@@ -19,8 +19,8 @@ pub type AppServiceState = ServiceState<
 
 #[derive(Clone)]
 pub struct ServiceState<
-    L: repository::LoginHistory = repository::LoginHistoryRepository<DatabaseConnection>,
-    C: repository::Credentials = repository::CredentialsRepository<DatabaseConnection>,
+    L: repository::LoginHistory,
+    C: repository::Credentials,
 > {
     pub login_history: L,
     pub credentials: C,

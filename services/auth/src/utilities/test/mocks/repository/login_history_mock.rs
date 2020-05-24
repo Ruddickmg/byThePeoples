@@ -39,7 +39,7 @@ impl<T: model::Database> MockLoginHistory<T> {
 }
 
 #[async_trait]
-impl<T: model::Database> repository::LoginHistory<T> for MockLoginHistory<T> {
+impl<T: model::Database> repository::LoginHistory for MockLoginHistory<T> {
     async fn log(&self, _id: &model::CredentialId) -> Result<model::FailedLogin, Error> {
         self.log.call()
     }
