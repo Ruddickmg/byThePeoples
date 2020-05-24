@@ -42,15 +42,15 @@ impl ConnectionPool {
 
 #[async_trait]
 pub trait ConnectionPoolTrait<'a: 'b, 'b>: Clone + Send + Sync {
-    type Client;
-    async fn client(&'b self) -> Result<Self::Client>;
+    type Client: crate::Client<'a, 'b> + Send + Sync;
+    async fn client(&'a self) -> Result<Self::Client>;
     async fn migrate(&self, path: &str) -> Result<()>;
 }
 
 #[async_trait]
 impl<'a: 'b, 'b> ConnectionPoolTrait<'a, 'b> for ConnectionPool {
-    type Client = client::Client<'b>;
-    async fn client(&'b self) -> Result<Self::Client> {
+    type Client = client::Client<'a>;
+    async fn client(&'a self) -> Result<Self::Client> {
         Ok(client::Client::new(self.pool.get().await?))
     }
     async fn migrate(&self, path: &str) -> Result<()> {

@@ -1,7 +1,7 @@
 use crate::repository;
 
 pub mod credentials;
-mod failed_login;
+// mod failed_login;
 mod request;
 
 pub use credentials::*;
@@ -9,34 +9,38 @@ pub use database::Client;
 pub use database::Database;
 pub use database::DatabaseClient;
 pub use database::DatabaseConnection;
-pub use failed_login::*;
+// pub use failed_login::*;
 pub use request::*;
+use serde::export::PhantomData;
 
-pub type AppServiceState = ServiceState<
-    repository::LoginHistoryRepository<DatabaseConnection>,
-    repository::CredentialsRepository<DatabaseConnection>,
+pub type AppServiceState<'a: 'b, 'b> = ServiceState<
+    'a,
+    // repository::LoginHistoryRepository<DatabaseConnection>,
+    repository::CredentialsRepository<'a, 'b, DatabaseConnection>,
 >;
+
+struct Phantom;
 
 #[derive(Clone)]
 pub struct ServiceState<
-    L: repository::LoginHistory,
-    C: repository::Credentials,
+    'a,
+    C: repository::Credentials<'a>,
 > {
-    pub login_history: L,
     pub credentials: C,
+    phantom: PhantomData<&'a Phantom>,
 }
 
-impl<L: repository::LoginHistory, C: repository::Credentials> ServiceState<L, C> {
-    pub fn new(login_history: L, credentials: C) -> ServiceState<L, C> {
+impl<'a, C: repository::Credentials<'a>> ServiceState<'a, C> {
+    pub fn new(credentials: C) -> ServiceState<'a, C> {
         ServiceState {
             credentials,
-            login_history,
+            phantom: PhantomData,
         }
     }
 }
 
-pub fn initialize_state(db: &DatabaseConnection) -> AppServiceState {
+pub fn initialize_state<'a: 'b, 'b>(db: &DatabaseConnection) -> AppServiceState<'a, 'b> {
     let credentials_repository = repository::CredentialsRepository::new(db.clone());
-    let login_history_repository = repository::LoginHistoryRepository::new(db.clone());
-    ServiceState::new(login_history_repository, credentials_repository)
+    // let login_history_repository = repository::LoginHistoryRepository::new(db.clone());
+    ServiceState::new(credentials_repository)
 }

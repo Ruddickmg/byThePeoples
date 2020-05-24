@@ -23,7 +23,8 @@ pub use connection_pool::ConnectionPool as DatabaseConnection;
 pub use connection_pool::ConnectionPoolTrait as Database;
 pub use std::time::SystemTime as TimeStamp;
 pub use tokio_postgres::Statement;
-pub use transaction::Transaction;
+pub use transaction::Transaction as DatabaseTransaction;
+pub use transaction::TransactionTrait as Transaction;
 
 type Result<T> = std::result::Result<T, Error>;
 type Manager = bb8_postgres::PostgresConnectionManager<tokio_postgres::tls::NoTls>;

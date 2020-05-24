@@ -5,27 +5,28 @@ use crate::{
 use actix_web::{web, HttpResponse};
 
 pub async fn save_credentials<
-    L: repository::LoginHistory,
-    C: repository::Credentials,
+    'a,
+    C: 'a + repository::Credentials<'a>,
 >(
-    state: web::Data<model::ServiceState<L, C>>,
+    state: web::Data<model::ServiceState<'a, C>>,
     json: web::Json<model::FullRequest>,
 ) -> HttpResponse {
-    let user_credentials = model::FullRequest::from(json);
-    match credentials::create(&state.credentials, &user_credentials).await {
-        Ok(result) => match result {
-            credentials::SaveResults::Conflict => HttpResponse::Conflict().finish(),
-            credentials::SaveResults::WeakPassword(problems) => serde_json::to_string(&problems)
-                .map_or(HttpResponse::InternalServerError().finish(), |json| {
-                    HttpResponse::Forbidden().json2(&json)
-                }),
-            credentials::SaveResults::Success(stored_credentials) => {
-                jwt::set_token(HttpResponse::Created(), stored_credentials)
-                    .unwrap_or(HttpResponse::InternalServerError().finish())
-            }
-        },
-        Err(_) => HttpResponse::InternalServerError().finish(),
-    }
+    let _user_credentials = model::FullRequest::from(json);
+    // match credentials::create(&state.credentials, &user_credentials).await {
+    //     Ok(result) => match result {
+    //         credentials::SaveResults::Conflict => HttpResponse::Conflict().finish(),
+    //         credentials::SaveResults::WeakPassword(problems) => serde_json::to_string(&problems)
+    //             .map_or(HttpResponse::InternalServerError().finish(), |json| {
+    //                 HttpResponse::Forbidden().json2(&json)
+    //             }),
+    //         credentials::SaveResults::Success(stored_credentials) => {
+    //             jwt::set_token(HttpResponse::Created(), stored_credentials)
+    //                 .unwrap_or(HttpResponse::InternalServerError().finish())
+    //         }
+    //     },
+    //     Err(_) => HttpResponse::InternalServerError().finish(),
+    // }
+    HttpResponse::Ok().finish()
 }
 
 #[cfg(test)]

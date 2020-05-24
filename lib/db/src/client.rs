@@ -41,7 +41,7 @@ impl<'a: 'c, 'c> Client<'a> {
 
 #[async_trait]
 pub trait ClientTrait<'a: 'c, 'c> {
-    type Transaction;
+    type Transaction: crate::Transaction<'c> + Send + Sync;
     async fn execute<'b>(&self, query: &str, params: Params<'b>) -> Result<u64>;
     async fn prepare(&self, query: &str) -> Result<Statement>;
     async fn query<'b, T: Send + From<Row>>(

@@ -7,8 +7,8 @@ pub enum SaveResults {
     Conflict,
 }
 
-pub async fn create<C: repository::Credentials>(
-    credentials: &C,
+pub async fn create<'a, C: repository::Credentials<'a>>(
+    credentials: &'a C,
     request: &model::FullRequest,
 ) -> Result<SaveResults, Error> {
     let model::FullRequest {

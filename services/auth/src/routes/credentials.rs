@@ -5,8 +5,8 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("")
             .route(web::post().to(credentials::create::<
-                repository::AppLoginHistory,
-                repository::AppCredentials,
+                // repository::AppLoginHistory,
+                repository::CredentialsRepository,
             >))
             // .route(web::delete().to(credentials::delete::<
             //     repository::AppLoginHistory,
