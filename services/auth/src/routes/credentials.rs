@@ -8,13 +8,13 @@ pub fn config(cfg: &mut web::ServiceConfig) {
                 repository::AppLoginHistory,
                 repository::AppCredentials,
             >))
-            .route(web::delete().to(credentials::delete::<
-                repository::AppLoginHistory,
-                repository::AppCredentials,
-            >))
-            .route(web::put().to(credentials::update_credentials::<
-                repository::AppLoginHistory,
-                repository::AppCredentials,
-            >)),
+            // .route(web::delete().to(credentials::delete::<
+            //     repository::AppLoginHistory,
+            //     repository::AppCredentials,
+            // >))
+            // .route(web::put().to(credentials::update_credentials::<
+            //     repository::AppLoginHistory,
+            //     repository::AppCredentials,
+            // >)),
     );
 }
