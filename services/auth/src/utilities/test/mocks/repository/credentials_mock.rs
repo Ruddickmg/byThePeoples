@@ -66,7 +66,7 @@ impl<T: model::Database> MockCredentials<T> {
 }
 
 #[async_trait]
-impl<T: model::Database> repository::Credentials<T> for MockCredentials<T> {
+impl<T: model::Database> repository::Credentials for MockCredentials<T> {
     async fn by_name(&self, _name: &str) -> CredentialResults {
         self.by_name.call()
     }
