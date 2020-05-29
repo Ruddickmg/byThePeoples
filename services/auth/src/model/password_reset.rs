@@ -3,33 +3,34 @@ use std::time::{SystemTime, Duration};
 use crate::{
     configuration::PASSWORD_RESET_TIME_PERIOD,
     utilities::hash,
-    Error,
+    Result,
 };
 
 pub mod query {
     pub const GET_REQUEST_BY_ID: &str = "SELECT id, user_id, reset_token, created_at FROM auth.password_rest WHERE id = $1";
-    pub const CREATE_REQUEST: &str = "INSERT VALUES($1, $2, $3) INTO auth.password_reset(id, user_id, reset_token)";
+    pub const CREATE_REQUEST: &str = "INSERT VALUES($1, $2, $3) INTO auth.password_reset(id, user_id, reset_token) RETURNING id, user_id, reset_token, created_at";
 }
 
-pub struct PasswordReset {
-    id: String,
-    reset_token: String,
-    user_id: u32,
-    created_at: Timestamp,
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct PasswordResetRequest {
+    pub id: String,
+    pub reset_token: String,
+    pub user_id: i32,
+    pub created_at: Timestamp,
 }
 
-impl PasswordReset {
-    pub fn expired(&self) -> Result<bool, Error> {
+impl PasswordResetRequest {
+    pub fn expired(&self) -> Result<bool> {
         Ok(SystemTime::now().duration_since(self.created_at)? > Duration::from_secs(PASSWORD_RESET_TIME_PERIOD))
     }
-    pub fn matches_token(&self, token: &str) -> Result<bool, Error> {
+    pub fn matches_token(&self, token: &str) -> Result<bool> {
         hash::authenticate(token, &self.reset_token)
     }
 }
 
-impl From<database::Row> for PasswordReset {
-    fn from(row: database::Row) -> PasswordReset {
-        PasswordReset {
+impl From<database::Row> for PasswordResetRequest {
+    fn from(row: database::Row) -> PasswordResetRequest {
+        PasswordResetRequest {
             id: row.get(0),
             user_id: row.get(2),
             reset_token: row.get(1),
@@ -50,7 +51,7 @@ mod tests {
     fn expired_returns_true_if_password_request_has_expired() {
         let key = hash::token();
         let id = hash::token();
-        let record = PasswordReset {
+        let record = PasswordResetRequest {
             id,
             reset_token: hash::generate(&key).unwrap(),
             user_id: 1,
@@ -63,7 +64,7 @@ mod tests {
     fn expired_returns_false_if_password_request_has_not_expired() {
         let key = hash::token();
         let id = hash::token();
-        let record = PasswordReset {
+        let record = PasswordResetRequest {
             id,
             reset_token: hash::generate(&key).unwrap(),
             user_id: 1,
@@ -76,7 +77,7 @@ mod tests {
     fn matches_token_returns_true_if_the_hashed_access_key_is_valid() {
         let key = hash::token();
         let id = hash::token();
-        let record = PasswordReset {
+        let record = PasswordResetRequest {
             id,
             reset_token: hash::generate(&key).unwrap(),
             user_id: 1,
@@ -89,7 +90,7 @@ mod tests {
     fn matches_token_returns_false_if_the_hashed_access_key_is_invalid() {
         let key = hash::token();
         let id = hash::token();
-        let record = PasswordReset {
+        let record = PasswordResetRequest {
             id: id.clone(),
             reset_token: hash::generate(&key).unwrap(),
             user_id: 1,

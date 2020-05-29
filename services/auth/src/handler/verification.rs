@@ -6,13 +6,15 @@ use crate::{
 };
 use actix_web::{web, HttpResponse};
 
-pub async fn authenticate_credentials<
-    L: repository::LoginHistory,
-    C: repository::Credentials,
->(
-    state: web::Data<model::ServiceState<L, C>>,
+pub async fn authenticate_credentials<L, C, R>(
+    state: web::Data<model::ServiceState<L, C, R>>,
     json: web::Json<model::NameRequest>,
-) -> HttpResponse {
+) -> HttpResponse
+    where
+        L: repository::LoginHistory,
+        C: repository::Credentials,
+        R: repository::PasswordResetRequest
+{
     let user_credentials = model::NameRequest::from(json);
     match authorization::authorize(&user_credentials, &state.credentials, &state.login_history)
         .await
@@ -31,7 +33,7 @@ pub async fn authenticate_credentials<
 #[cfg(test)]
 mod verification_handler_test {
     use super::*;
-    use crate::{utilities::{test::fake, hash}, Error};
+    use crate::{utilities::{test::fake, hash}, error::Error};
     use actix_rt;
     use actix_web::{http, web};
 

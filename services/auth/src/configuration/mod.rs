@@ -2,6 +2,7 @@ use crate::constants::ONE_DAY;
 
 pub use environment;
 
+pub mod connection;
 pub mod database;
 pub mod hash;
 pub mod jwt;

@@ -1,4 +1,4 @@
-use crate::{model, repository, Error};
+use crate::{model, repository, Result};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum DeleteResults {
@@ -15,7 +15,7 @@ pub async fn delete<
     credentials: &C,
     login_history: &L,
     request: &model::EmailRequest,
-) -> Result<DeleteResults, Error> {
+) -> Result<DeleteResults> {
     let model::EmailRequest { password, email }: &model::EmailRequest = request;
     if let Some(stored_credentials) = credentials.by_email(&email).await? {
         if stored_credentials.suspended()? {

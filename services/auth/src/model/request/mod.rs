@@ -5,12 +5,14 @@ mod email_auth;
 mod full_auth;
 mod name_auth;
 mod update;
+mod password_reset;
 
 use actix_web::web::Json;
 pub use credentials::CredentialsRequest;
 pub use email_auth::*;
 pub use full_auth::FullRequest;
 pub use name_auth::NameRequest;
+pub use password_reset::*;
 pub use update::*;
 
 pub enum AuthRequest {

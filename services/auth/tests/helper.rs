@@ -5,7 +5,7 @@ use btp_auth_server::{
     configuration::database::TEST_DATABASE_CONFIG,
     model,
     model::{credentials::query::SUSPEND, CredentialId},
-    Error,
+    Result,
 };
 use fake::faker::{internet::en as internet, name::en as name};
 use fake::Fake;
@@ -38,7 +38,7 @@ pub struct Helper {
 }
 
 impl Helper {
-    pub async fn new() -> Result<Helper, Error> {
+    pub async fn new() -> Result<Helper> {
         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG).await?;
         Ok(Helper {
             db: db.clone(),
@@ -48,7 +48,7 @@ impl Helper {
     pub async fn get_credentials_by_name(
         &self,
         name: &str,
-    ) -> Result<Option<model::Credentials>, Error> {
+    ) -> Result<Option<model::Credentials>> {
         Ok(self.state.credentials.by_name(&name).await?)
     }
     pub async fn add_credentials(&self, request: &model::FullRequest) {
@@ -115,7 +115,7 @@ impl Helper {
     pub async fn get_login_history(
         &self,
         user_id: &CredentialId,
-    ) -> Result<Vec<model::FailedLogin>, Error> {
+    ) -> Result<Vec<model::FailedLogin>> {
         let db = &self.db;
         let client = &db.client().await?;
         let stmt = client.prepare(GET_FAILED_LOGIN_HISTORY).await?;

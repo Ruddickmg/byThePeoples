@@ -1,4 +1,4 @@
-use crate::{model, model::credentials, Error};
+use crate::{model, model::credentials, Result};
 use async_trait::async_trait;
 use futures::future::join;
 use std::marker::{Send, Sync};
@@ -25,7 +25,7 @@ impl<T: model::Database> LoginHistoryRepository<T> {
     pub fn new(db: T) -> LoginHistoryRepository<T> {
         LoginHistoryRepository { db }
     }
-    pub async fn log(&self, id: &model::CredentialId) -> Result<model::FailedLogin, Error> {
+    pub async fn log(&self, id: &model::CredentialId) -> Result<model::FailedLogin> {
         let client = self.db.client().await?;
         let stmt = client.prepare(CREATE_OR_UPDATE_FAILED_LOGIN).await?;
         Ok(client
@@ -33,7 +33,7 @@ impl<T: model::Database> LoginHistoryRepository<T> {
             .await?
             .remove(0))
     }
-    pub async fn get(&self, id: &model::CredentialId) -> Result<model::FailedLogin, Error> {
+    pub async fn get(&self, id: &model::CredentialId) -> Result<model::FailedLogin> {
         let client = self.db.client().await?;
         let stmt = client.prepare(GET_FAILED_LOGIN).await?;
         Ok(client
@@ -41,7 +41,7 @@ impl<T: model::Database> LoginHistoryRepository<T> {
             .await?
             .remove(0))
     }
-    pub async fn delete(&self, id: &model::CredentialId) -> Result<(), Error> {
+    pub async fn delete(&self, id: &model::CredentialId) -> Result<()> {
         self.db
             .client()
             .await?
@@ -49,7 +49,7 @@ impl<T: model::Database> LoginHistoryRepository<T> {
             .await?;
         Ok(())
     }
-    pub async fn suspend(&self, user_id: &model::CredentialId) -> Result<(), Error> {
+    pub async fn suspend(&self, user_id: &model::CredentialId) -> Result<()> {
         let failed_logins = self.log(user_id).await?;
         if failed_logins.exceeded_limit() {
             let reset = self.delete(user_id);
@@ -72,15 +72,15 @@ impl<T: model::Database> LoginHistoryRepository<T> {
 
 #[async_trait]
 pub trait LoginHistory: Clone + Send + Sync {
-    async fn log(&self, id: &model::CredentialId) -> Result<model::FailedLogin, Error>;
-    async fn get(&self, id: &model::CredentialId) -> Result<model::FailedLogin, Error>;
-    async fn delete(&self, id: &model::CredentialId) -> Result<(), Error>;
-    async fn suspend(&self, user_id: &model::CredentialId) -> Result<(), Error>;
+    async fn log(&self, id: &model::CredentialId) -> Result<model::FailedLogin>;
+    async fn get(&self, id: &model::CredentialId) -> Result<model::FailedLogin>;
+    async fn delete(&self, id: &model::CredentialId) -> Result<()>;
+    async fn suspend(&self, user_id: &model::CredentialId) -> Result<()>;
 }
 
 #[async_trait]
 impl<T: model::Database> LoginHistory for LoginHistoryRepository<T> {
-    async fn log(&self, id: &model::CredentialId) -> Result<model::FailedLogin, Error> {
+    async fn log(&self, id: &model::CredentialId) -> Result<model::FailedLogin> {
         let client = self.db.client().await?;
         let stmt = client.prepare(CREATE_OR_UPDATE_FAILED_LOGIN).await?;
         Ok(client
@@ -88,7 +88,7 @@ impl<T: model::Database> LoginHistory for LoginHistoryRepository<T> {
             .await?
             .remove(0))
     }
-    async fn get(&self, id: &model::CredentialId) -> Result<model::FailedLogin, Error> {
+    async fn get(&self, id: &model::CredentialId) -> Result<model::FailedLogin> {
         let client = self.db.client().await?;
         let stmt = client.prepare(GET_FAILED_LOGIN).await?;
         Ok(client
@@ -96,7 +96,7 @@ impl<T: model::Database> LoginHistory for LoginHistoryRepository<T> {
             .await?
             .remove(0))
     }
-    async fn delete(&self, id: &model::CredentialId) -> Result<(), Error> {
+    async fn delete(&self, id: &model::CredentialId) -> Result<()> {
         self.db
             .client()
             .await?
@@ -104,7 +104,7 @@ impl<T: model::Database> LoginHistory for LoginHistoryRepository<T> {
             .await?;
         Ok(())
     }
-    async fn suspend(&self, user_id: &model::CredentialId) -> Result<(), Error> {
+    async fn suspend(&self, user_id: &model::CredentialId) -> Result<()> {
         let failed_logins = self.log(user_id).await?;
         if failed_logins.exceeded_limit() {
             let mut client = self.db.client().await?;

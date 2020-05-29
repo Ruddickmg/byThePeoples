@@ -7,7 +7,7 @@ pub struct Client<'a> {
 }
 
 impl<'a: 'c, 'c> Client<'a> {
-    pub fn new(connection: PooledConnection<'a>) -> Client {
+    pub fn new(connection: PooledConnection<'a>) -> Self {
         Client { connection }
     }
     pub async fn execute<'b>(&self, query: &str, params: Params<'b>) -> Result<u64> {

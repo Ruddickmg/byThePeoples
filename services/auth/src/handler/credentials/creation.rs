@@ -6,13 +6,15 @@ use crate::{
 };
 use actix_web::{web, HttpResponse};
 
-pub async fn save_credentials<
-    L: repository::LoginHistory,
-    C: repository::Credentials,
->(
-    state: web::Data<model::ServiceState<L, C>>,
+pub async fn save_credentials<L, C, R>(
+    state: web::Data<model::ServiceState<L, C, R>>,
     json: web::Json<model::FullRequest>,
-) -> HttpResponse {
+) -> HttpResponse
+    where
+        L: repository::LoginHistory,
+        C: repository::Credentials,
+        R: repository::PasswordResetRequest
+{
     let user_credentials = model::FullRequest::from(json);
     match credentials::create(&state.credentials, &user_credentials).await {
         Ok(result) => match result {
@@ -33,7 +35,7 @@ pub async fn save_credentials<
 #[cfg(test)]
 mod save_credentials_handler_test {
     use super::*;
-    use crate::{repository, utilities::test::fake, Error};
+    use crate::{repository, utilities::test::fake, error::Error};
     use actix_rt;
     use actix_web::{http, web};
 
@@ -48,7 +50,7 @@ mod save_credentials_handler_test {
         state
             .credentials
             .get_status
-            .returns(repository::credentials::Status::None);
+            .returns(repository::CredentialStatus::None);
         state.credentials.save_credentials.returns(record);
         let result = save_credentials(web::Data::new(state), web::Json(request)).await;
         assert_eq!(result.status(), status_codes::CREATED);
@@ -63,7 +65,7 @@ mod save_credentials_handler_test {
         state
             .credentials
             .get_status
-            .returns(repository::credentials::Status::None);
+            .returns(repository::CredentialStatus::None);
         state.credentials.save_credentials.returns(record);
         let result = save_credentials(web::Data::new(state), web::Json(request)).await;
         assert!(result.headers().contains_key(http::header::AUTHORIZATION));
@@ -94,7 +96,7 @@ mod save_credentials_handler_test {
         state
             .credentials
             .get_status
-            .returns(repository::credentials::Status::Exists);
+            .returns(repository::CredentialStatus::Exists);
         let result = save_credentials(web::Data::new(state), web::Json(request)).await;
         assert_eq!(result.status(), status_codes::CONFLICT);
     }
@@ -106,7 +108,7 @@ mod save_credentials_handler_test {
         state
             .credentials
             .get_status
-            .returns(repository::credentials::Status::Exists);
+            .returns(repository::CredentialStatus::Exists);
         let result = save_credentials(web::Data::new(state), web::Json(request)).await;
         assert!(!result.headers().contains_key(http::header::AUTHORIZATION));
     }

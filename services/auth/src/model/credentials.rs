@@ -1,7 +1,7 @@
 use crate::{
     configuration::ACCOUNT_LOCK_DURATION_IN_SECONDS,
     utilities::hash,
-    Error,
+    Result,
 };
 use std::time::{SystemTime, Duration};
 
@@ -18,6 +18,7 @@ pub mod query {
         "UPDATE auth.credentials SET deleted_at = CURRENT_TIMESTAMP WHERE email = $1";
     pub const SUSPEND: &str =
         "UPDATE auth.credentials SET locked_at = CURRENT_TIMESTAMP WHERE id = $1";
+    pub const UPDATE_PASSWORD_HASH: &str =  "UPDATE auth.credentials SET hash = $2 WHERE id = $1 RETURNING id, email, name, hash, created_at, updated_at, deleted_at, locked_at";
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -33,7 +34,7 @@ pub struct Credentials {
 }
 
 impl Credentials {
-    pub fn suspended(&self) -> Result<bool, Error> {
+    pub fn suspended(&self) -> Result<bool> {
         Ok(self.locked_at.map_or(false, | suspension_start | {
             let suspension_duration = Duration::from_secs(ACCOUNT_LOCK_DURATION_IN_SECONDS);
             SystemTime::now()
@@ -42,7 +43,7 @@ impl Credentials {
                 .unwrap_or(false)
         }))
     }
-    pub fn password_matches(&self, password: &str) -> Result<bool, Error> {
+    pub fn password_matches(&self, password: &str) -> Result<bool> {
         hash::authenticate(password, &self.hash)
     }
 }

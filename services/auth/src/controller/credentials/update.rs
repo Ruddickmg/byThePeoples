@@ -1,4 +1,4 @@
-use crate::{utilities::hash, model, repository, Error};
+use crate::{utilities::hash, model, repository, Result};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum UpdateResults {
@@ -16,7 +16,7 @@ pub async fn update<
     login_history: &L,
     auth_details: &model::EmailRequest,
     request: &model::CredentialsRequest,
-) -> Result<UpdateResults, Error> {
+) -> Result<UpdateResults> {
     let model::CredentialsRequest {
         name,
         email,

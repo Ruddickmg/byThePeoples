@@ -1,7 +1,7 @@
 use std::fmt;
 use zxcvbn::zxcvbn as check_password_strength;
 use serde::{Serialize, Deserialize};
-use crate::Error;
+use crate::Result;
 
 pub enum Strength {
     Strong,
@@ -31,7 +31,7 @@ pub struct PasswordIssues {
 }
 const WEAK_PASSWORD_MESSAGE: &str = "Password is not strong enough";
 
-pub fn strength(name: &str, email: &str, password: &str) -> Result<Strength, Error> {
+pub fn strength(name: &str, email: &str, password: &str) -> Result<Strength> {
     let result = check_password_strength(&password, &[&name, &email])?;
     Ok(match result.score() {
         0..=2 => Strength::Weak(match result.feedback() {

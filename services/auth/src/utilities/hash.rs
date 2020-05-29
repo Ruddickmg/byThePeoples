@@ -1,6 +1,6 @@
 extern crate argonautica;
 
-use crate::{configuration::hash, Error};
+use crate::{configuration::hash, Result, error::Error};
 use argonautica::{Hasher, Verifier};
 use ring::{rand as ring_rand, rand::SecureRandom};
 use std::str;
@@ -9,7 +9,7 @@ use rand::{Rng, distributions::Alphanumeric};
 
 const SALT_LENGTH: usize = 32;
 
-fn generate_salt() -> Result<Vec<u8>, Error> {
+fn generate_salt() -> Result<Vec<u8>> {
     let rng = ring_rand::SystemRandom::new();
     let mut salt = [0u8; SALT_LENGTH];
     rng.fill(&mut salt)?;
@@ -23,7 +23,7 @@ pub fn token() -> String {
         .collect()
 }
 
-pub fn generate(word: &str) -> Result<String, Error> {
+pub fn generate(word: &str) -> Result<String> {
     Ok(Hasher::default()
         .configure_lanes(hash::lanes())
         .configure_iterations(hash::time_cost())
@@ -34,7 +34,7 @@ pub fn generate(word: &str) -> Result<String, Error> {
         .hash()?)
 }
 
-pub fn authenticate(password: &str, hash: &str) -> Result<bool, Error> {
+pub fn authenticate(password: &str, hash: &str) -> Result<bool> {
     match Verifier::default()
         .with_hash(hash)
         .with_password(password)

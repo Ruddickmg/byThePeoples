@@ -1,13 +1,15 @@
 use crate::{controller::credentials, model, repository};
 use actix_web::{web, HttpResponse};
 
-pub async fn delete_credentials<
-    L: repository::LoginHistory,
-    C: repository::Credentials,
->(
-    state: web::Data<model::ServiceState<L, C>>,
+pub async fn delete_credentials<L, C, R>(
+    state: web::Data<model::ServiceState<L, C, R>>,
     json: web::Json<model::EmailRequest>,
-) -> HttpResponse {
+) -> HttpResponse
+    where
+        L: repository::LoginHistory,
+        C: repository::Credentials,
+        R: repository::PasswordResetRequest
+{
     let user_credentials = model::EmailRequest::from(json);
     match credentials::delete(&state.credentials, &state.login_history, &user_credentials).await {
         Ok(deletion) => match deletion {
@@ -22,7 +24,7 @@ pub async fn delete_credentials<
 #[cfg(test)]
 mod delete_credentials_handler_test {
     use super::*;
-    use crate::{utilities::{test::fake, hash}, Error};
+    use crate::{utilities::{test::fake, hash}, error::Error};
     use actix_rt;
     use actix_web::web;
 

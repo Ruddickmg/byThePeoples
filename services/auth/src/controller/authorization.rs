@@ -1,4 +1,4 @@
-use crate::{model, repository, Error};
+use crate::{model, repository, Result};
 
 #[derive(Eq, PartialEq, Debug)]
 pub enum Results {
@@ -15,7 +15,7 @@ pub async fn authorize<
     user_credentials: &model::NameRequest,
     auth_credentials: &C,
     login_history: &L,
-) -> Result<Results, Error> {
+) -> Result<Results> {
     if let Some(auth_record) = auth_credentials.by_name(&user_credentials.name).await? {
         let user_id = &auth_record.id;
         if auth_record.suspended()? {
