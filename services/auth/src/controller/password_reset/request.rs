@@ -18,36 +18,31 @@ mod tests {
     use super::*;
     use crate::{
         utilities::test::fake,
-        model,
         error,
     };
     use actix_rt;
-    use std::time::SystemTime;
+    use std::any::Any;
 
     #[actix_rt::test]
-    async fn returns_the_request_token_on_successful_generation() {
+    async fn returns_the_request_record_on_successful_generation() {
         let mut state = fake::service_state();
         let email = "test@testing.com";
-        let reset_request = model::PasswordResetRequest {
-            id: "2432345".to_string(),
-            reset_token: "2342534534".to_string(),
-            user_id: 0,
-            created_at: SystemTime::now(),
-        };
+        let reset_request = fake::password_reset_request();
         state.reset_request.generate.returns(Some(reset_request.clone()));
         let result = request_password_reset(&state.reset_request, email)
-            .await.unwrap().unwrap();
-        assert_eq!(result, reset_request.clone().reset_token);
+            .await.unwrap();
+        assert_eq!(result, reset_request.clone());
     }
 
     #[actix_rt::test]
-    async fn returns_none_if_no_matching_user_was_found() {
+    async fn returns_dummy_request_record_if_no_matching_user_was_found() {
         let mut state = fake::service_state();
+        let request = fake::password_reset_request();
         let email = "test@testing.com";
         state.reset_request.generate.returns(None);
         let result = request_password_reset(&state.reset_request, email)
             .await.unwrap();
-        assert_eq!(result, None);
+        assert_eq!(request.type_id(), result.type_id());
     }
 
     #[actix_rt::test]

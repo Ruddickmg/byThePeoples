@@ -4,7 +4,6 @@ use crate::{
     controller::password_reset,
     model,
 };
-use crate::controller::password_reset::ResetResult;
 
 pub async fn reset_password<L, C, R>(
     state: web::Data<model::ServiceState<L, C, R>>,
@@ -17,6 +16,12 @@ pub async fn reset_password<L, C, R>(
 {
     let request = model::ResetConfirmation::from(json);
     password_reset::reset_password(&state.reset_request, &state.credentials, &request)
-        .await.map_or(HttpResponse::InternalServerError(), || HttpResponse::Ok())
+        .await.map_or(HttpResponse::InternalServerError(), |_| HttpResponse::Accepted())
         .finish()
+}
+
+#[cfg(test)]
+mod tests {
+
+
 }
