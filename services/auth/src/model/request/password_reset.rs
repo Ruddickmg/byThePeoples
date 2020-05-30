@@ -1,5 +1,6 @@
 use actix_web::web;
 
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ResetConfirmation {
     pub id: String,
     pub reset_token: String,
@@ -16,6 +17,7 @@ impl From<web::Json<ResetConfirmation>> for ResetConfirmation {
     }
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ResetRequest {
     pub email: String,
 }

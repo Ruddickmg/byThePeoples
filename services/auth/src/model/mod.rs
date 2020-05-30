@@ -4,6 +4,7 @@ pub mod credentials;
 mod failed_login;
 pub mod password_reset;
 mod request;
+mod response;
 
 pub use credentials::*;
 pub use database::Client;
@@ -11,6 +12,7 @@ pub use database::Database;
 pub use database::DatabaseClient;
 pub use database::DatabaseConnection;
 pub use failed_login::*;
+pub use response::*;
 pub use request::*;
 pub use password_reset::*;
 

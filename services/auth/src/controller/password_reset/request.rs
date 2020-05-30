@@ -1,10 +1,16 @@
-use crate::{repository, Result};
+use crate::{repository, Result, model, utilities::hash};
+use std::time::SystemTime;
 
 pub async fn request_password_reset<R: repository::PasswordResetRequest>(
     reset_request: &R,
     email: &str,
-) -> Result<Option<String>> {
-    Ok(reset_request.generate(email).await?.map(|record | record.reset_token))
+) -> Result<model::PasswordResetRequest> {
+    Ok(reset_request.generate(email).await?.unwrap_or(model::PasswordResetRequest {
+        id: hash::token(),
+        reset_token: hash::token(),
+        user_id: 0,
+        created_at: SystemTime::now(),
+    }))
 }
 
 #[cfg(test)]
