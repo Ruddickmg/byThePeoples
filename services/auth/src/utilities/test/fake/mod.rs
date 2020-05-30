@@ -53,6 +53,12 @@ pub fn password_reset_data() -> model::ResetConfirmation {
     }
 }
 
+pub fn reset_request() -> model::ResetRequest {
+    model::ResetRequest {
+        email: email_address(),
+    }
+}
+
 pub fn service_state() -> MockServiceState {
     let mock_login_history = MockLoginHistory::<model::DatabaseConnection>::new();
     let mock_credentials = MockCredentials::<model::DatabaseConnection>::new();

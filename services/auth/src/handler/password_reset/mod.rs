@@ -1,5 +1,5 @@
-mod reset_request;
-mod password_reset;
+mod request_password_reset;
+mod reset_password;
 
-pub use reset_request::*;
-pub use password_reset::*;
+pub use request_password_reset::*;
+pub use reset_password::*;

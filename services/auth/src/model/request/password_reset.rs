@@ -1,6 +1,7 @@
 use actix_web::web;
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ResetConfirmation {
     pub id: String,
     pub reset_token: String,
@@ -17,7 +18,7 @@ impl From<web::Json<ResetConfirmation>> for ResetConfirmation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ResetRequest {
     pub email: String,
 }
