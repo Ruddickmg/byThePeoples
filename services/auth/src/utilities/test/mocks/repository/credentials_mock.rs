@@ -12,6 +12,7 @@ type MockedCredentials = mocking::Method<model::Credentials, Error>;
 pub struct MockCredentials<T: model::Database> {
     pub by_name: MockedOptionCredentials,
     pub by_email: MockedOptionCredentials,
+    pub by_id: MockedOptionCredentials,
     pub get_status: MockedStatusResult,
     pub update_credentials: MockedCredentials,
     pub update_password_hash: MockedCredentials,
@@ -25,6 +26,7 @@ impl<T: model::Database> MockCredentials<T> {
         MockCredentials {
             by_name: MockedOptionCredentials::new("repository::Credentials.by_name()"),
             by_email: MockedOptionCredentials::new("repository::Credentials.by_email()"),
+            by_id: MockedOptionCredentials::new("repository::Credentials.by_id()"),
             get_status: MockedStatusResult::new("repository::Credentials.get_status()"),
             update_credentials: MockedCredentials::new(
                 "repository::Credentials.update_credentials()",
@@ -42,6 +44,9 @@ impl<T: model::Database> MockCredentials<T> {
     }
     pub async fn by_email(&self, _email: &str) -> CredentialResults {
         self.by_email.call()
+    }
+    pub async fn by_id(&self, _id: i32) -> CredentialResults {
+        self.by_id.call()
     }
     pub async fn get_status(
         &self,
@@ -77,6 +82,9 @@ impl<T: model::Database> repository::Credentials for MockCredentials<T> {
     }
     async fn by_email(&self, _email: &str) -> CredentialResults {
         self.by_email.call()
+    }
+    async fn by_id(&self, _id: i32) -> CredentialResults {
+        self.by_id.call()
     }
     async fn get_status(&self, _name: &str, _email: &str) -> Result<repository::CredentialStatus> {
         self.get_status.call()

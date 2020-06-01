@@ -1,10 +1,12 @@
-use crate::{repository, Result, utilities::hash, model};
+use crate::{repository, Result, utilities::{hash, password}, model};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ResetResult {
     Success(model::Credentials),
+    WeakPassword(password::PasswordIssues),
     InvalidToken,
     NotFound,
+    Expired,
 }
 
 pub async fn reset_password<R: repository::PasswordResetRequest, C: repository::Credentials>(
@@ -12,16 +14,24 @@ pub async fn reset_password<R: repository::PasswordResetRequest, C: repository::
     credentials: &C,
     data: &model::ResetConfirmation,
 ) -> Result<ResetResult> {
-    if let Some(request) = reset_request.by_id(&data.id).await? {
-        if hash::authenticate(&data.reset_token, &request.reset_token)? {
-            let hashed_password = hash::generate(&data.password)?;
-            Ok(ResetResult::Success(credentials.update_password_hash(&request.user_id, &hashed_password).await?))
+    Ok(if let Some(request) = reset_request.by_id(&data.id).await? {
+        if request.expired()? {
+            ResetResult::Expired
         } else {
-            Ok(ResetResult::InvalidToken)
+            if let password::Strength::Weak(problems) = password::strength(&request.name, &request.email, &data.password)? {
+                ResetResult::WeakPassword(problems)
+            } else {
+                if hash::authenticate(&data.reset_token, &request.reset_token)? {
+                    let hashed_password = hash::generate(&data.password)?;
+                    ResetResult::Success(credentials.update_password_hash(&request.user_id, &hashed_password).await?)
+                } else {
+                    ResetResult::InvalidToken
+                }
+            }
         }
     } else {
-        Ok(ResetResult::NotFound)
-    }
+        ResetResult::NotFound
+    })
 }
 
 #[cfg(test)]
@@ -92,5 +102,23 @@ mod tests {
         let result = reset_password(&state.reset_request, &state.credentials, &request)
             .await.err().unwrap();
         assert_eq!(result.to_string(), error.clone().to_string());
+    }
+
+    #[actix_rt::test]
+    async fn returns_weak_password_if_the_password_is_weak() {
+        let credentials = fake::credentials();
+        let mut reset_record = fake::password_reset_request();
+        let mut request = fake::password_reset_data();
+        let mut state = fake::service_state();
+        request.password = fake::weak_password();
+        reset_record.reset_token = hash::generate(&request.reset_token).unwrap();
+        state.reset_request.by_id.returns(Some(reset_record));
+        state.credentials.update_password_hash.returns(credentials.clone());
+        let result = reset_password(&state.reset_request, &state.credentials, &request)
+            .await.unwrap();
+        match result {
+            ResetResult::WeakPassword(_) => assert!(true),
+            _ => panic!(format!("Expected weak password result, found: {:#?}", result)),
+        }
     }
 }

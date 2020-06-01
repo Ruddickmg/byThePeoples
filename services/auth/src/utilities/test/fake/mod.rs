@@ -13,6 +13,7 @@ use std::time::SystemTime;
 
 const MAX_FAKE_PASSWORD_LENGTH: usize = 20;
 const MIN_FAKE_PASSWORD_LENGTH: usize = 15;
+const WEAK_PASSWORD: &str = "password";
 
 type MockServiceState = model::ServiceState<
     MockLoginHistory<model::DatabaseConnection>,
@@ -22,6 +23,9 @@ type MockServiceState = model::ServiceState<
 
 pub fn strong_password() -> String {
     internet::Password(MIN_FAKE_PASSWORD_LENGTH..MAX_FAKE_PASSWORD_LENGTH).fake()
+}
+pub fn weak_password() -> String {
+    String::from(WEAK_PASSWORD)
 }
 pub fn email_address() -> String {
     internet::FreeEmail().fake()
@@ -41,6 +45,8 @@ pub fn password_reset_request() -> model::PasswordResetRequest {
         id: hash::token(),
         reset_token: hash::token(),
         user_id: 0,
+        name: user_name(),
+        email: email_address(),
         created_at: SystemTime::now(),
     }
 }

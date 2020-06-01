@@ -24,14 +24,11 @@ impl<T: model::Database> CredentialsRepository<T> {
     pub async fn get_by_single_param(&self, query: &str, param: &str) -> CredentialResults {
         let client = self.db.client().await?;
         let statement = client.prepare(query).await?;
-        let mut results = client
+        Ok(client
             .query::<model::Credentials>(&statement, &[&param])
-            .await?;
-        if results.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(results.remove(0)))
-        }
+            .await?
+            .first()
+            .map(| credentials | credentials.clone()))
     }
     pub async fn by_name(&self, name: &str) -> CredentialResults {
         self.get_by_single_param(credentials::query::NAME, name)
@@ -40,6 +37,13 @@ impl<T: model::Database> CredentialsRepository<T> {
     pub async fn by_email(&self, email: &str) -> CredentialResults {
         self.get_by_single_param(credentials::query::EMAIL, email)
             .await
+    }
+    pub async fn by_id(&self, id: i32) -> CredentialResults {
+        let client = self.db.client().await?;
+        let stmt = client.prepare(credentials::query::ID).await?;
+        Ok(client
+            .query::<model::Credentials>(&stmt, &[&id])
+            .await?.first().map(| credentials | credentials.clone()))
     }
     pub async fn get_status(&self, name: &str, email: &str) -> Result<CredentialStatus> {
         let client = self.db.client().await?;
@@ -111,6 +115,7 @@ impl<T: model::Database> CredentialsRepository<T> {
 pub trait Credentials: Clone + Send + Sync {
     async fn by_name(&self, name: &str) -> CredentialResults;
     async fn by_email(&self, email: &str) -> CredentialResults;
+    async fn by_id(&self, id: i32) -> CredentialResults;
     async fn get_status(&self, name: &str, email: &str) -> Result<CredentialStatus>;
     async fn update_credentials(
         &self,
@@ -133,6 +138,18 @@ impl<T: model::Database> Credentials for CredentialsRepository<T> {
     async fn by_email(&self, email: &str) -> CredentialResults {
         self.get_by_single_param(credentials::query::EMAIL, email)
             .await
+    }
+    async fn by_id(&self, id: i32) -> CredentialResults {
+        let client = self.db.client().await?;
+        let stmt = client.prepare(credentials::query::ID).await?;
+        let mut results = client
+            .query::<model::Credentials>(&stmt, &[&id])
+            .await?;
+        if results.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(results.remove(0)))
+        }
     }
     async fn get_status(&self, name: &str, email: &str) -> Result<CredentialStatus> {
         let client = self.db.client().await?;

@@ -9,6 +9,8 @@ pub async fn request_password_reset<R: repository::PasswordResetRequest>(
         id: hash::token(),
         reset_token: hash::token(),
         user_id: 0,
+        name: String::from(""),
+        email: String::from(""),
         created_at: SystemTime::now(),
     }))
 }

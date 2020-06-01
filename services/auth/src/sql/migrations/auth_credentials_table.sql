@@ -8,5 +8,3 @@ CREATE TABLE IF NOT EXISTS auth.credentials (
     deleted_at timestamp DEFAULT null,
     locked_at timestamp DEFAULT null
 );
-
-

@@ -10,6 +10,7 @@ pub type CredentialId = i32;
 pub mod query {
     pub const NAME: &'static str = "SELECT id, email, name, hash, created_at, updated_at, deleted_at, locked_at FROM auth.credentials WHERE name = $1";
     pub const EMAIL: &str = "SELECT id, email, name, hash, created_at, updated_at, deleted_at, locked_at FROM auth.credentials WHERE email = $1";
+    pub const ID: &str = "SELECT id, email, name, hash, created_at, updated_at, deleted_at, locked_at FROM auth.credentials WHERE id = $1";
     pub const SAVE: &str = "INSERT INTO auth.credentials(name, email, hash) VALUES ($1, $2, $3) RETURNING id, email, name, hash, created_at, updated_at, deleted_at, locked_at";
     pub const DELETED_AT: &str =
         "SELECT deleted_at FROM auth.credentials WHERE name = $1 OR email = $2";

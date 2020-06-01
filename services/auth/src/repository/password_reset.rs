@@ -21,13 +21,24 @@ impl<T: model::Database> PasswordReset<T> {
         if let Some(credentials) = client.query::<model::Credentials>(&credentials_by_email, &[&email])
             .await?
             .first() {
-            Ok(client.query::<model::PasswordResetRequest>(&password_rest_request, &[&id, &credentials.id, &hashed_token])
+            Ok(client.query::<model::PasswordResetRequest>(
+                &password_rest_request,
+                &[
+                    &id,
+                    &credentials.id,
+                    &hashed_token,
+                    &credentials.name,
+                    &credentials.email,
+                ],
+            )
                 .await?
                 .first()
                 .map(| request | model::PasswordResetRequest {
                     id,
                     reset_token,
                     user_id: credentials.id,
+                    email: credentials.email.clone(),
+                    name: credentials.name.clone(),
                     created_at: request.created_at,
                 }))
         } else {
@@ -64,12 +75,7 @@ impl<T: model::Database> PasswordResetRequest for PasswordReset<T> {
             Ok(client.query::<model::PasswordResetRequest>(&password_rest_request, &[&id, &credentials.id, &hashed_token])
                 .await?
                 .first()
-                .map(| request | model::PasswordResetRequest {
-                    id,
-                    reset_token,
-                    user_id: credentials.id,
-                    created_at: request.created_at,
-                }))
+                .map(| reset | reset.clone()))
         } else {
             Ok(None)
         }
