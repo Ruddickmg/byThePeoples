@@ -44,7 +44,7 @@ pub fn authenticate(password: &str, hash: &str) -> Result<bool> {
         Ok(result) => Ok(result),
         Err(error) => match error.kind() {
             argonautica::ErrorKind::HashDecodeError => Ok(false),
-            _ => Err(Error::InternalServerError(format!("{:#?}", error))),
+            _ => Err(Error::InternalServerError(error.to_string())),
         },
     }
 }

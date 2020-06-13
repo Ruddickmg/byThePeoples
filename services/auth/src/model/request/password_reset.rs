@@ -8,6 +8,16 @@ pub struct ResetConfirmation {
     pub password: String,
 }
 
+impl ResetConfirmation {
+    pub fn new(id: &str, reset_token: &str, password: &str) -> ResetConfirmation {
+        ResetConfirmation {
+            id: String::from(id),
+            reset_token: String::from(reset_token),
+            password: String::from(password),
+        }
+    }
+}
+
 impl From<web::Json<ResetConfirmation>> for ResetConfirmation {
     fn from(json: web::Json<ResetConfirmation>) -> ResetConfirmation {
         ResetConfirmation {
@@ -21,6 +31,12 @@ impl From<web::Json<ResetConfirmation>> for ResetConfirmation {
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ResetRequest {
     pub email: String,
+}
+
+impl ResetRequest {
+    pub fn new(email: &str) -> ResetRequest {
+        ResetRequest { email: String::from(email) }
+    }
 }
 
 impl From<web::Json<ResetRequest>> for ResetRequest {

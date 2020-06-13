@@ -3,9 +3,9 @@ extern crate btp_auth_server;
 use actix_web::web;
 use btp_auth_server::{
     configuration::database::TEST_DATABASE_CONFIG,
-    model,
     model::{credentials::query::SUSPEND, CredentialId},
     Result,
+    model,
 };
 use fake::faker::{internet::en as internet, name::en as name};
 use fake::Fake;
@@ -15,6 +15,8 @@ const CREATE_OR_UPDATE_FAILED_LOGIN: &str = "INSERT INTO auth.failed_login(user_
 const GET_FAILED_LOGIN_HISTORY: &str =
     "SELECT user_id, attempts, created_at, updated_at FROM auth.failed_login WHERE user_id = $1;";
 const CREATE_FAILED_LOGIN: &str = "INSERT INTO auth.failed_login(user_id, created_at, updated_at, attempts) VALUES ($1, $2, $3, $4);";
+const GET_RESET_REQUEST_BY_USER_ID: &str = "SELECT id, user_id, reset_token, name, email, created_at FROM auth.password_reset WHERE user_id = $1";
+
 const MAX_FAKE_PASSWORD_LENGTH: usize = 20;
 const MIN_FAKE_PASSWORD_LENGTH: usize = 15;
 
@@ -27,7 +29,7 @@ pub async fn init_data() -> web::Data<model::AppServiceState> {
 
 pub fn fake_credentials() -> (String, String, String) {
     let name = name::Name().fake();
-    let email = name::FirstName().fake();
+    let email = internet::FreeEmail().fake();
     let password = internet::Password(MIN_FAKE_PASSWORD_LENGTH..MAX_FAKE_PASSWORD_LENGTH).fake();
     (name, email, password)
 }
@@ -119,11 +121,15 @@ impl Helper {
         let db = &self.db;
         let client = &db.client().await?;
         let stmt = client.prepare(GET_FAILED_LOGIN_HISTORY).await?;
-        Ok(client
-            .query(&stmt, &[&user_id])
-            .await?
-            .iter()
-            .map(model::FailedLogin::from)
-            .collect())
+        Ok(client.query::<model::FailedLogin>(&stmt, &[&user_id]).await?)
+    }
+    pub async fn get_reset_request(
+        &self,
+        user_id: &CredentialId,
+    ) -> Result<model::PasswordResetRequest> {
+        let db = &self.db;
+        let client = &db.client().await?;
+        let stmt = client.prepare(GET_RESET_REQUEST_BY_USER_ID).await?;
+        Ok(client.query::<model::PasswordResetRequest>(&stmt, &[&user_id]).await?.remove(0))
     }
 }

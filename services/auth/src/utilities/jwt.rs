@@ -22,7 +22,7 @@ pub fn generate_token(credentials: Credentials) -> Result<String> {
     let Credentials {
         id, name, email, ..
     } = credentials;
-    match jsonwebtoken::encode(
+    jsonwebtoken::encode(
         &jsonwebtoken::Header::default(),
         &Claims {
             id,
@@ -31,10 +31,8 @@ pub fn generate_token(credentials: Credentials) -> Result<String> {
             exp: jwt::expiration(),
         },
         &EncodingKey::from_secret(&jwt::secret().as_ref()),
-    ) {
-        Ok(jwt) => Ok(jwt),
-        Err(error) => Err(Error::InternalServerError(format!("{:#?}", error))),
-    }
+    )
+        .map_err(| error | Error::InternalServerError(error.to_string()))
 }
 
 pub fn set_token(

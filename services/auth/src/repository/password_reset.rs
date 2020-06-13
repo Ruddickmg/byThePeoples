@@ -11,47 +11,6 @@ pub struct PasswordReset<T: model::Database> {
 
 impl<T: model::Database> PasswordReset<T> {
     pub fn new (db: T) -> Self { PasswordReset { db } }
-    pub async fn generate(&self, email: &str) -> Result<Option<model::PasswordResetRequest>> {
-        let client = self.db.client().await?;
-        let reset_token = hash::token();
-        let id = hash::token();
-        let hashed_token = hash::generate(&reset_token)?;
-        let credentials_by_email = client.prepare(credentials::query::EMAIL).await?;
-        let password_rest_request = client.prepare(password_reset::query::CREATE_REQUEST).await?;
-        if let Some(credentials) = client.query::<model::Credentials>(&credentials_by_email, &[&email])
-            .await?
-            .first() {
-            Ok(client.query::<model::PasswordResetRequest>(
-                &password_rest_request,
-                &[
-                    &id,
-                    &credentials.id,
-                    &hashed_token,
-                    &credentials.name,
-                    &credentials.email,
-                ],
-            )
-                .await?
-                .first()
-                .map(| request | model::PasswordResetRequest {
-                    id,
-                    reset_token,
-                    user_id: credentials.id,
-                    email: credentials.email.clone(),
-                    name: credentials.name.clone(),
-                    created_at: request.created_at,
-                }))
-        } else {
-            Ok(None)
-        }
-    }
-    pub async fn by_id(&self, id: &str) -> Result<Option<model::PasswordResetRequest>> {
-        let client = self.db.client().await?;
-        let request_by_id = client.prepare(password_reset::query::GET_REQUEST_BY_ID).await?;
-        Ok(Some(client.query::<model::PasswordResetRequest>(&request_by_id, &[&id])
-            .await?
-            .remove(0)))
-    }
 }
 
 #[async_trait]
@@ -68,14 +27,30 @@ impl<T: model::Database> PasswordResetRequest for PasswordReset<T> {
         let id = hash::token();
         let hashed_token = hash::generate(&reset_token)?;
         let credentials_by_email = client.prepare(credentials::query::EMAIL).await?;
-        let password_rest_request = client.prepare(password_reset::query::CREATE_REQUEST).await?;
+        let password_reset_request = client.prepare(password_reset::query::CREATE_REQUEST).await?;
         if let Some(credentials) = client.query::<model::Credentials>(&credentials_by_email, &[&email])
             .await?
             .first() {
-            Ok(client.query::<model::PasswordResetRequest>(&password_rest_request, &[&id, &credentials.id, &hashed_token])
+            Ok(client.query::<model::PasswordResetRequest>(
+                &password_reset_request,
+                &[
+                    &id,
+                    &credentials.id,
+                    &hashed_token,
+                    &credentials.name,
+                    &credentials.email,
+                ],
+            )
                 .await?
                 .first()
-                .map(| reset | reset.clone()))
+                .map(| request | model::PasswordResetRequest {
+                        id,
+                        reset_token,
+                        user_id: credentials.id,
+                        email: credentials.email.clone(),
+                        name: credentials.name.clone(),
+                        created_at: request.created_at,
+                    }))
         } else {
             Ok(None)
         }
@@ -83,8 +58,9 @@ impl<T: model::Database> PasswordResetRequest for PasswordReset<T> {
     async fn by_id(&self, id: &str) -> Result<Option<model::PasswordResetRequest>> {
         let client = self.db.client().await?;
         let request_by_id = client.prepare(password_reset::query::GET_REQUEST_BY_ID).await?;
-        Ok(Some(client.query::<model::PasswordResetRequest>(&request_by_id, &[&id])
+        Ok(client.query::<model::PasswordResetRequest>(&request_by_id, &[&id])
             .await?
-            .remove(0)))
+            .first()
+            .cloned())
     }
 }

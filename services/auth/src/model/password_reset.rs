@@ -1,5 +1,6 @@
 use database::Timestamp;
 use std::time::{SystemTime, Duration};
+use serde::{Serialize, Deserialize};
 use crate::{
     configuration::PASSWORD_RESET_TIME_PERIOD,
     utilities::hash,
@@ -7,11 +8,11 @@ use crate::{
 };
 
 pub mod query {
-    pub const GET_REQUEST_BY_ID: &str = "SELECT id, user_id, reset_token, name, email, created_at FROM auth.password_rest WHERE id = $1";
-    pub const CREATE_REQUEST: &str = "INSERT VALUES($1, $2, $3, $4, $5) INTO auth.password_reset(id, user_id, reset_token, name, email) RETURNING id, user_id, reset_token, name, email, created_at";
+    pub const GET_REQUEST_BY_ID: &str = "SELECT id, user_id, reset_token, name, email, created_at FROM auth.password_reset WHERE id = $1";
+    pub const CREATE_REQUEST: &str = "INSERT INTO auth.password_reset(id, user_id, reset_token, name, email) VALUES($1, $2, $3, $4, $5) RETURNING id, user_id, reset_token, name, email, created_at";
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct PasswordResetRequest {
     pub id: String,
     pub user_id: i32,

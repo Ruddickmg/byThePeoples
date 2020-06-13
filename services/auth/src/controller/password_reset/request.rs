@@ -1,18 +1,15 @@
 use crate::{repository, Result, model, utilities::hash};
-use std::time::SystemTime;
 
 pub async fn request_password_reset<R: repository::PasswordResetRequest>(
     reset_request: &R,
     email: &str,
-) -> Result<model::PasswordResetRequest> {
-    Ok(reset_request.generate(email).await?.unwrap_or(model::PasswordResetRequest {
-        id: hash::token(),
-        reset_token: hash::token(),
-        user_id: 0,
-        name: String::from(""),
-        email: String::from(""),
-        created_at: SystemTime::now(),
-    }))
+) -> Result<model::ResetToken> {
+    reset_request.generate(email).await?
+        .map_or_else(|| hash::generate(hash::token().as_ref())
+        .map_or_else(| error | Err(error), | hashed | Ok(model::ResetToken::new(
+            hash::token().as_ref(),
+            &hashed,
+        ))), | record | Ok(model::ResetToken::new(&record.id, &record.reset_token)))
 }
 
 #[cfg(test)]
@@ -30,10 +27,11 @@ mod tests {
         let mut state = fake::service_state();
         let email = "test@testing.com";
         let reset_request = fake::password_reset_request();
-        state.reset_request.generate.returns(Some(reset_request.clone()));
+        let reset_token = model::ResetToken::new(&reset_request.id, &reset_request.reset_token);
+        state.reset_request.generate.returns(Some(reset_request));
         let result = request_password_reset(&state.reset_request, email)
             .await.unwrap();
-        assert_eq!(result, reset_request.clone());
+        assert_eq!(result, reset_token);
     }
 
     #[actix_rt::test]
@@ -41,10 +39,11 @@ mod tests {
         let mut state = fake::service_state();
         let request = fake::password_reset_request();
         let email = "test@testing.com";
+        let reset_token = model::ResetToken::new(&request.id, &request.reset_token);
         state.reset_request.generate.returns(None);
         let result = request_password_reset(&state.reset_request, email)
             .await.unwrap();
-        assert_eq!(request.type_id(), result.type_id());
+        assert_eq!(reset_token.type_id(), result.type_id());
     }
 
     #[actix_rt::test]

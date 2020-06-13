@@ -19,11 +19,11 @@ pub async fn reset_password<L, C, R>(
         Ok(result) => match result {
             password_reset::ResetResult::WeakPassword(problems) => serde_json::to_string(&problems)
                 .map_or(HttpResponse::InternalServerError().finish(), | json | {
-                    HttpResponse::Forbidden().json2(&json)
+                    HttpResponse::Forbidden().json(&json)
                 }),
             password_reset::ResetResult::Expired => HttpResponse::Gone().finish(),
             _ => HttpResponse::Accepted().finish(),
-        }
+        },
         Err(_) => HttpResponse::InternalServerError().finish()
     }
 }

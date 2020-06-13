@@ -51,6 +51,10 @@ pub fn password_reset_request() -> model::PasswordResetRequest {
     }
 }
 
+pub fn password_reset_token() -> model::ResetToken {
+    model::ResetToken::new(hash::token().as_ref(), hash::token().as_ref())
+}
+
 pub fn password_reset_data() -> model::ResetConfirmation {
     model::ResetConfirmation {
         id: hash::token(),
