@@ -1,4 +1,4 @@
-use crate::{controller::password, model, repository, Error};
+use crate::{utilities::hash, model, repository, Result};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum UpdateResults {
@@ -16,7 +16,7 @@ pub async fn update<
     login_history: &L,
     auth_details: &model::EmailRequest,
     request: &model::CredentialsRequest,
-) -> Result<UpdateResults, Error> {
+) -> Result<UpdateResults> {
     let model::CredentialsRequest {
         name,
         email,
@@ -26,7 +26,7 @@ pub async fn update<
         if stored_credentials.suspended()? {
             Ok(UpdateResults::Suspended)
         } else {
-            if password::authenticate(&auth_details.password, &stored_credentials.hash)? {
+            if stored_credentials.password_matches(&auth_details.password)? {
                 Ok(UpdateResults::Success(
                     credentials
                         .update_credentials(&model::Credentials {
@@ -35,7 +35,7 @@ pub async fn update<
                                 .as_ref()
                                 .map_or(stored_credentials.email, String::from),
                             hash: match &password {
-                                Some(p) => password::hash_password(p)?,
+                                Some(p) => hash::generate(p)?,
                                 None => stored_credentials.hash,
                             },
                             ..stored_credentials
@@ -55,7 +55,10 @@ pub async fn update<
 #[cfg(test)]
 mod credentials_update_test {
     use super::*;
-    use crate::utilities::test::fake;
+    use crate::utilities::{
+        test::fake,
+        hash,
+    };
     use actix_rt;
     use std::time::SystemTime;
 
@@ -139,7 +142,7 @@ mod credentials_update_test {
         let update_request = fake::credentials_request();
         let auth_request = fake::email_request();
         let mut state = fake::service_state();
-        credentials.hash = password::hash_password(&auth_request.password).unwrap();
+        credentials.hash = hash::generate(&auth_request.password).unwrap();
         state
             .credentials
             .by_email
@@ -168,7 +171,7 @@ mod credentials_update_test {
         let update_request = fake::credentials_request();
         let auth_request = fake::email_request();
         let mut state = fake::service_state();
-        credentials.hash = password::hash_password(&auth_request.password).unwrap();
+        credentials.hash = hash::generate(&auth_request.password).unwrap();
         state
             .credentials
             .by_email

@@ -4,8 +4,9 @@ use actix_rt;
 use actix_web::{test, App};
 use btp_auth_server::{
     configuration::{ACCOUNT_LOCK_DURATION_IN_SECONDS, ALLOWED_FAILED_LOGIN_ATTEMPTS},
-    controller, model, routes,
+    model, routes,
     routes::CREDENTIALS_ROUTE,
+    utilities,
 };
 use std::{
     ops::Sub,
@@ -59,7 +60,7 @@ async fn returns_an_accepted_response_if_deletion_was_successful() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let request_data = model::FullRequest::new(&name, &email, &hashed_password);
     db.add_credentials(&request_data).await;
     let request_data = model::EmailRequest::new(&email, &password);
@@ -83,7 +84,7 @@ async fn sets_deleted_at_timestamp_on_deleted_record() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let db_data = model::FullRequest::new(&name, &email, &hashed_password);
     db.add_credentials(&db_data).await;
     let request_data = model::EmailRequest::new(&email, &password);
@@ -108,7 +109,7 @@ async fn returns_unauthorized_if_a_user_has_been_suspended() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let db_data = model::FullRequest::new(&name, &email, &hashed_password);
     db.add_credentials(&db_data).await;
     let request_data = model::EmailRequest::new(&email, &password);
@@ -134,7 +135,7 @@ async fn suspends_a_user_if_they_have_exceeded_the_allowed_failed_deletion_attem
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let db_data = model::FullRequest::new(&name, &email, &hashed_password);
     db.add_credentials(&db_data).await;
     let request_data = model::EmailRequest::new(&email, "Bad Password");
@@ -162,7 +163,7 @@ async fn deletes_the_login_history_once_a_user_has_been_suspended() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let db_data = model::FullRequest::new(&name, &email, &hashed_password);
     db.add_credentials(&db_data).await;
     let request_data = model::EmailRequest::new(&email, "Bad Password");
@@ -190,7 +191,7 @@ async fn deletes_login_history_if_previous_deletion_failures_are_expired() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let db_data = model::FullRequest::new(&name, &email, &hashed_password);
     db.add_credentials(&db_data).await;
     let request_data = model::EmailRequest::new(&email, "Bad Password");
@@ -218,7 +219,7 @@ async fn does_not_suspend_user_if_previous_deletion_failures_are_expired() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let db_data = model::FullRequest::new(&name, &email, &hashed_password);
     db.add_credentials(&db_data).await;
     let request_data = model::EmailRequest::new(&email, "Bad Password");
@@ -253,7 +254,7 @@ async fn creates_a_log_of_failed_deletion_attempts() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let db_data = model::FullRequest::new(&name, &email, &hashed_password);
     db.add_credentials(&db_data).await;
     let request_data = model::EmailRequest::new(&email, "Bad Password");

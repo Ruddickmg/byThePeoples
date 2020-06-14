@@ -2,12 +2,12 @@ use std::sync::{Arc, RwLock};
 
 type CountRef = Arc<RwLock<_Count>>;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct _Count {
     value: usize,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct Count(CountRef);
 
 impl Count {

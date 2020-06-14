@@ -4,7 +4,8 @@ use actix_rt;
 use actix_web::{http, test, App};
 use btp_auth_server::{
     configuration::{ACCOUNT_LOCK_DURATION_IN_SECONDS, ALLOWED_FAILED_LOGIN_ATTEMPTS},
-    controller, model, routes,
+    utilities,
+    model, routes,
     routes::CREDENTIALS_ROUTE,
 };
 use std::{
@@ -18,7 +19,7 @@ async fn returns_okay_if_the_update_was_successful() {
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
     let (name2, email2, password2) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let auth_credentials = model::EmailRequest::new(&email, &password);
     let updated_credentials = model::CredentialsRequest::new(
         &Some(name2.clone()),
@@ -49,7 +50,7 @@ async fn sets_updated_auth_token_on_successful_response() {
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
     let (name2, email2, password2) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let auth_credentials = model::EmailRequest::new(&email, &password);
     let updated_credentials = model::CredentialsRequest::new(
         &Some(name2.clone()),
@@ -80,7 +81,7 @@ async fn updates_a_users_name() {
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
     let (name2, ..) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let auth_credentials = model::EmailRequest::new(&email, &password);
     let updated_credentials = model::CredentialsRequest::new(&Some(name2.clone()), &None, &None);
     let request_data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
@@ -110,7 +111,7 @@ async fn updates_a_users_password() {
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
     let (name2, _email2, password2) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let auth_credentials = model::EmailRequest::new(&email, &password);
     let updated_credentials =
         model::CredentialsRequest::new(&None, &None, &Some(password2.clone()));
@@ -132,7 +133,7 @@ async fn updates_a_users_password() {
     db.delete_credentials_by_name(&name2).await;
     assert_eq!(&stored_credentials.email, &email);
     assert_eq!(&stored_credentials.name, &name);
-    assert!(controller::password::authenticate(&password2, &stored_credentials.hash).unwrap());
+    assert!(utilities::hash::authenticate(&password2, &stored_credentials.hash).unwrap());
 }
 
 #[actix_rt::test]
@@ -141,7 +142,7 @@ async fn updates_a_users_email() {
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
     let (_name2, email2, ..) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let auth_credentials = model::EmailRequest::new(&email, &password);
     let updated_credentials = model::CredentialsRequest::new(&None, &Some(email2.clone()), &None);
     let request_data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
@@ -170,7 +171,7 @@ async fn returns_unauthorized_if_auth_credentials_are_invalid() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let auth_credentials = model::EmailRequest::new(&email, "Invalid Password");
     let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
     let request_data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
@@ -196,7 +197,7 @@ async fn does_not_set_auth_token_if_unauthorized() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let auth_credentials = model::EmailRequest::new(&email, "Invalid Password");
     let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
     let request_data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
@@ -264,7 +265,7 @@ async fn returns_unauthorized_if_a_user_has_been_suspended() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let auth_credentials = model::EmailRequest::new(&email, &password);
     let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
     let request_data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
@@ -292,7 +293,7 @@ async fn suspends_a_user_if_they_have_exceeded_the_allowed_failed_update_attempt
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let auth_credentials = model::EmailRequest::new(&email, "Invalid password");
     let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
     let request_data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
@@ -322,7 +323,7 @@ async fn deletes_the_login_history_once_a_user_has_been_suspended() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let auth_credentials = model::EmailRequest::new(&email, "Invalid password");
     let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
     let request_data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
@@ -352,7 +353,7 @@ async fn deletes_login_history_if_previous_update_failures_are_expired() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let auth_credentials = model::EmailRequest::new(&email, "Invalid password");
     let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
     let request_data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
@@ -389,7 +390,7 @@ async fn does_not_suspend_user_if_previous_update_failures_are_expired() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let auth_credentials = model::EmailRequest::new(&email, "Invalid password");
     let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
     let request_data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);
@@ -426,7 +427,7 @@ async fn creates_a_log_of_failed_login_attempts() {
     let data = helper::init_data().await;
     let db = helper::Helper::new().await.unwrap();
     let (name, email, password) = helper::fake_credentials();
-    let hashed_password = controller::password::hash_password(&password).unwrap();
+    let hashed_password = utilities::hash::generate(&password).unwrap();
     let auth_credentials = model::EmailRequest::new(&email, "Invalid password");
     let updated_credentials = model::CredentialsRequest::new(&None, &None, &None);
     let request_data = model::UpdateCredentials::new(&auth_credentials, &updated_credentials);

@@ -1,12 +1,17 @@
-use crate::{configuration::ACCOUNT_LOCK_DURATION_IN_SECONDS, Error};
-use std::time::Duration;
+use crate::{
+    configuration::ACCOUNT_LOCK_DURATION_IN_SECONDS,
+    utilities::hash,
+    Result,
+};
+use std::time::{SystemTime, Duration};
 
 pub type CredentialId = i32;
 
 pub mod query {
     pub const NAME: &'static str = "SELECT id, email, name, hash, created_at, updated_at, deleted_at, locked_at FROM auth.credentials WHERE name = $1";
     pub const EMAIL: &str = "SELECT id, email, name, hash, created_at, updated_at, deleted_at, locked_at FROM auth.credentials WHERE email = $1";
-    pub const SAVE: &str = "INSERT INTO auth.credentials(name, email, hash) VALUES ($1, $2, $3) RETURNING id, email, name, hash, created_at, updated_at, deleted_at, locked_at";
+    pub const ID: &str = "SELECT id, email, name, hash, created_at, updated_at, deleted_at, locked_at FROM auth.credentials WHERE id = $1";
+    pub const CREATE: &str = "INSERT INTO auth.credentials(name, email, hash) VALUES ($1, $2, $3) RETURNING id, email, name, hash, created_at, updated_at, deleted_at, locked_at";
     pub const DELETED_AT: &str =
         "SELECT deleted_at FROM auth.credentials WHERE name = $1 OR email = $2";
     pub const UPDATE: &str = "UPDATE auth.credentials SET name = $1, hash = $2, email = $3, updated_at = CURRENT_TIMESTAMP, deleted_at = null WHERE id = $4 RETURNING id, email, name, hash, created_at, updated_at, deleted_at, locked_at";
@@ -14,6 +19,7 @@ pub mod query {
         "UPDATE auth.credentials SET deleted_at = CURRENT_TIMESTAMP WHERE email = $1";
     pub const SUSPEND: &str =
         "UPDATE auth.credentials SET locked_at = CURRENT_TIMESTAMP WHERE id = $1";
+    pub const UPDATE_PASSWORD_HASH: &str =  "UPDATE auth.credentials SET hash = $2 WHERE id = $1 RETURNING id, email, name, hash, created_at, updated_at, deleted_at, locked_at";
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -29,14 +35,17 @@ pub struct Credentials {
 }
 
 impl Credentials {
-    pub fn suspended(&self) -> Result<bool, Error> {
-        if let Some(suspension_start) = self.locked_at {
-            let now = database::TimeStamp::now();
-            Ok(now.duration_since(suspension_start)?
-                < Duration::from_secs(ACCOUNT_LOCK_DURATION_IN_SECONDS))
-        } else {
-            Ok(false)
-        }
+    pub fn suspended(&self) -> Result<bool> {
+        Ok(self.locked_at.map_or(false, | suspension_start | {
+            let suspension_duration = Duration::from_secs(ACCOUNT_LOCK_DURATION_IN_SECONDS);
+            SystemTime::now()
+                .duration_since(suspension_start)
+                .map(| start_time | start_time < suspension_duration)
+                .unwrap_or(false)
+        }))
+    }
+    pub fn password_matches(&self, password: &str) -> Result<bool> {
+        hash::authenticate(password, &self.hash)
     }
 }
 

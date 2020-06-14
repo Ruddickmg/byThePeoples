@@ -1,6 +1,7 @@
 pub type StatusCode = u16;
 
 pub const OKAY: StatusCode = 200;
+pub const GONE: StatusCode = 410;
 pub const CREATED: StatusCode = 201;
 pub const ACCEPTED: StatusCode = 202;
 pub const BAD_REQUEST: StatusCode = 400;

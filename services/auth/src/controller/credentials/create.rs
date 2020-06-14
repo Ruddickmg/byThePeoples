@@ -1,4 +1,4 @@
-use crate::{controller::password, model, repository, Error};
+use crate::{utilities::{password, hash}, model, repository, Result};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum SaveResults {
@@ -10,7 +10,7 @@ pub enum SaveResults {
 pub async fn create<C: repository::Credentials>(
     credentials: &C,
     request: &model::FullRequest,
-) -> Result<SaveResults, Error> {
+) -> Result<SaveResults> {
     let model::FullRequest {
         name,
         email,
@@ -20,12 +20,12 @@ pub async fn create<C: repository::Credentials>(
         Ok(SaveResults::WeakPassword(problems))
     } else {
         match credentials.get_status(name, email).await? {
-            repository::Status::None => Ok(SaveResults::Success(
+            repository::CredentialStatus::None => Ok(SaveResults::Success(
                 credentials
                     .save_credentials(&model::FullRequest {
                         name: String::from(name),
                         email: String::from(email),
-                        password: password::hash_password(&password)?,
+                        password: hash::generate(&password)?,
                     })
                     .await?,
             )),
@@ -61,7 +61,7 @@ mod credentials_create_test {
         state
             .credentials
             .get_status
-            .returns(repository::credentials::Status::Exists);
+            .returns(repository::CredentialStatus::Exists);
         let result = create(&state.credentials, &request).await.unwrap();
         assert_eq!(result, SaveResults::Conflict);
     }
@@ -73,7 +73,7 @@ mod credentials_create_test {
         state
             .credentials
             .get_status
-            .returns(repository::credentials::Status::Deleted);
+            .returns(repository::CredentialStatus::Deleted);
         let result = create(&state.credentials, &request).await.unwrap();
         assert_eq!(result, SaveResults::Conflict);
     }
@@ -86,7 +86,7 @@ mod credentials_create_test {
         state
             .credentials
             .get_status
-            .returns(repository::credentials::Status::None);
+            .returns(repository::CredentialStatus::None);
         state
             .credentials
             .save_credentials

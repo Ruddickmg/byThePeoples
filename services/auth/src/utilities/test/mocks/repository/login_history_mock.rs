@@ -1,4 +1,4 @@
-use crate::{model, repository, Error};
+use crate::{model, repository, error::Error};
 use async_trait::async_trait;
 use serde::export::PhantomData;
 

@@ -3,9 +3,12 @@ extern crate btp_auth_server;
 use actix_web::web;
 use btp_auth_server::{
     configuration::database::TEST_DATABASE_CONFIG,
+    model::{
+        credentials::query::SUSPEND,
+        CredentialId,
+    },
+    Result,
     model,
-    model::{credentials::query::SUSPEND, CredentialId},
-    Error,
 };
 use fake::faker::{internet::en as internet, name::en as name};
 use fake::Fake;
@@ -15,8 +18,13 @@ const CREATE_OR_UPDATE_FAILED_LOGIN: &str = "INSERT INTO auth.failed_login(user_
 const GET_FAILED_LOGIN_HISTORY: &str =
     "SELECT user_id, attempts, created_at, updated_at FROM auth.failed_login WHERE user_id = $1;";
 const CREATE_FAILED_LOGIN: &str = "INSERT INTO auth.failed_login(user_id, created_at, updated_at, attempts) VALUES ($1, $2, $3, $4);";
+const GET_RESET_REQUEST_BY_USER_ID: &str = "SELECT id, user_id, reset_token, name, email, created_at FROM auth.password_reset WHERE user_id = $1";
+const CREATE_RESET_REQUEST: &str = "INSERT INTO auth.password_reset(id, user_id, reset_token, name, email, created_at) VALUES($1, $2, $3, $4, $5, $6) RETURNING id, user_id, reset_token, name, email, created_at";
+
 const MAX_FAKE_PASSWORD_LENGTH: usize = 20;
 const MIN_FAKE_PASSWORD_LENGTH: usize = 15;
+
+pub const WEAK_PASSWORD: &str = "password";
 
 pub async fn init_data() -> web::Data<model::AppServiceState> {
     let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG)
@@ -27,7 +35,7 @@ pub async fn init_data() -> web::Data<model::AppServiceState> {
 
 pub fn fake_credentials() -> (String, String, String) {
     let name = name::Name().fake();
-    let email = name::FirstName().fake();
+    let email = internet::FreeEmail().fake();
     let password = internet::Password(MIN_FAKE_PASSWORD_LENGTH..MAX_FAKE_PASSWORD_LENGTH).fake();
     (name, email, password)
 }
@@ -38,7 +46,7 @@ pub struct Helper {
 }
 
 impl Helper {
-    pub async fn new() -> Result<Helper, Error> {
+    pub async fn new() -> Result<Helper> {
         let db = model::DatabaseConnection::new(TEST_DATABASE_CONFIG).await?;
         Ok(Helper {
             db: db.clone(),
@@ -48,7 +56,7 @@ impl Helper {
     pub async fn get_credentials_by_name(
         &self,
         name: &str,
-    ) -> Result<Option<model::Credentials>, Error> {
+    ) -> Result<Option<model::Credentials>> {
         Ok(self.state.credentials.by_name(&name).await?)
     }
     pub async fn add_credentials(&self, request: &model::FullRequest) {
@@ -115,15 +123,41 @@ impl Helper {
     pub async fn get_login_history(
         &self,
         user_id: &CredentialId,
-    ) -> Result<Vec<model::FailedLogin>, Error> {
+    ) -> Result<Vec<model::FailedLogin>> {
         let db = &self.db;
         let client = &db.client().await?;
         let stmt = client.prepare(GET_FAILED_LOGIN_HISTORY).await?;
-        Ok(client
-            .query(&stmt, &[&user_id])
-            .await?
-            .iter()
-            .map(model::FailedLogin::from)
-            .collect())
+        Ok(client.query::<model::FailedLogin>(&stmt, &[&user_id]).await?)
+    }
+    pub async fn get_reset_request(
+        &self,
+        user_id: &CredentialId,
+    ) -> Result<model::PasswordResetRequest> {
+        let db = &self.db;
+        let client = &db.client().await?;
+        let stmt = client.prepare(GET_RESET_REQUEST_BY_USER_ID).await?;
+        Ok(client.query::<model::PasswordResetRequest>(&stmt, &[&user_id]).await?.remove(0))
+    }
+    pub async fn add_reset_request(
+        &self,
+        request: &model::PasswordResetRequest,
+    ) -> Result<model::PasswordResetRequest> {
+        let db = &self.db;
+        let client = &db.client().await?;
+        let stmt = client.prepare(CREATE_RESET_REQUEST).await?;
+        Ok(client.query::<model::PasswordResetRequest>(
+            &stmt,
+            &[
+                &request.id,
+                &request.user_id,
+                &request.reset_token,
+                &request.name,
+                &request.email,
+                &request.created_at,
+            ],
+        ).await?
+            .first()
+            .unwrap()
+            .clone())
     }
 }

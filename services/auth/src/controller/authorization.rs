@@ -1,4 +1,4 @@
-use crate::{controller::password, model, repository, Error};
+use crate::{model, repository, Result};
 
 #[derive(Eq, PartialEq, Debug)]
 pub enum Results {
@@ -15,13 +15,13 @@ pub async fn authorize<
     user_credentials: &model::NameRequest,
     auth_credentials: &C,
     login_history: &L,
-) -> Result<Results, Error> {
+) -> Result<Results> {
     if let Some(auth_record) = auth_credentials.by_name(&user_credentials.name).await? {
         let user_id = &auth_record.id;
         if auth_record.suspended()? {
             Ok(Results::Suspended)
         } else {
-            if password::authenticate(&user_credentials.password, &auth_record.hash)? {
+            if auth_record.password_matches(&user_credentials.password)? {
                 Ok(Results::Valid(auth_record))
             } else {
                 login_history.suspend(user_id).await?;
@@ -36,7 +36,10 @@ pub async fn authorize<
 #[cfg(test)]
 mod authorization_test {
     use super::*;
-    use crate::utilities::test::fake;
+    use crate::utilities::{
+        test::fake,
+        hash,
+    };
     use std::time::SystemTime;
 
     #[actix_rt::test]
@@ -94,7 +97,7 @@ mod authorization_test {
         let mut state = fake::service_state();
         let request = fake::name_request();
         let mut record = fake::credentials();
-        record.hash = password::hash_password(&request.password).unwrap();
+        record.hash = hash::generate(&request.password).unwrap();
         state.credentials.by_name.returns(Some(record.clone()));
         let result = authorize(&request, &state.credentials, &state.login_history)
             .await

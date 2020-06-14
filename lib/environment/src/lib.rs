@@ -9,6 +9,14 @@ pub fn env_or_default<T: std::fmt::Display>(variable_name: &str, default: T) -> 
     env::var(variable_name).unwrap_or(format!("{}", default))
 }
 
+pub fn path(path: &str) -> String {
+    format!(
+        "{}{}",
+        env::current_dir().unwrap().to_str().unwrap(),
+        path,
+    )
+}
+
 fn check_environment(target: &str) -> bool {
     match env::var(ENVIRONMENT) {
         Ok(environment) => environment == target,
