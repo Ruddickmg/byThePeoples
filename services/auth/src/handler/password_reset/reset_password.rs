@@ -15,17 +15,16 @@ pub async fn reset_password<L, C, R>(
         R: repository::PasswordResetRequest
 {
     let request = model::ResetConfirmation::from(json);
-    match password_reset::reset_password(&state.reset_request, &state.credentials, &request).await {
-        Ok(result) => match result {
+    password_reset::reset_password(&state.reset_request, &state.credentials, &request)
+        .await
+        .map_or_else(|_| HttpResponse::InternalServerError().finish(), | result  | match result {
             password_reset::ResetResult::WeakPassword(problems) => serde_json::to_string(&problems)
-                .map_or(HttpResponse::InternalServerError().finish(), | json | {
+                .map_or_else(|_| HttpResponse::InternalServerError().finish(), | json | {
                     HttpResponse::Forbidden().json(&json)
                 }),
             password_reset::ResetResult::Expired => HttpResponse::Gone().finish(),
             _ => HttpResponse::Accepted().finish(),
-        },
-        Err(_) => HttpResponse::InternalServerError().finish()
-    }
+        })
 }
 
 #[cfg(test)]
@@ -71,7 +70,7 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn returns_accepted_when_no_an_invalid_token_is_received() {
+    async fn returns_accepted_when_an_invalid_token_is_received() {
         let reset_record = fake::password_reset_request();
         let request = fake::password_reset_data();
         let mut state = fake::service_state();
